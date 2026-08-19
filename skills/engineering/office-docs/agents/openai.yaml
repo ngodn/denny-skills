@@ -1,0 +1,3 @@
+interface:
+  display_name: "Office Docs"
+  short_description: "Generate docx/xlsx/pptx deliverables in Python"

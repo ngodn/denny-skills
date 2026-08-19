@@ -1,0 +1,3 @@
+interface:
+  display_name: "Device42"
+  short_description: "Device42 discovery and DOQL reference"

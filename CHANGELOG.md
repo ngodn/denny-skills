@@ -1,4 +1,6 @@
-# mattpocock-skills
+# denny-skills
+
+> Forked from [mattpocock/skills](https://github.com/mattpocock/skills). Entries up to and including 1.2.3 are the upstream history and keep their original links.
 
 ## 1.2.3
 

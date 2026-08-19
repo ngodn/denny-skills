@@ -2,60 +2,64 @@
 
 One install story, one wording. `README.md`, `.changeset/*`, and every page under `docs/` must say **this** and nothing else. Change it here first, then propagate.
 
-`mattpocock-skills` is listed in **Claude Code's official marketplace** — configured name `claude-plugins-official`, source repo `anthropics/claude-plugins-official` — which every Claude Code install has out of the box. There is no marketplace to add first. Official Anthropic marketplaces have auto-update enabled by default ([discover-plugins](https://code.claude.com/docs/en/discover-plugins)), so "updates arrive automatically" is a true claim, not a hope.
+The install route is a **local clone plus link script**. There is no marketplace listing and no skills.sh registry entry for this repo: the team clones `ngodn/denny-skills` and links the skills into each harness's skill directory. Every entry is a link back into the clone, so `git pull` is the whole update story.
 
-## Claude Code — the plugin
+## All harnesses, all OSes
 
-<canonical-block name="claude-code">
-
-```bash
-claude plugins install mattpocock-skills
-```
-
-Or, from inside a session:
-
-```
-/plugin install mattpocock-skills
-```
-
-It's in Claude Code's official marketplace, so there's nothing to add first, and updates arrive automatically.
-
-</canonical-block>
-
-## Codex, and other agents — skills.sh
-
-The plugin is Claude Code only. Everywhere else, [skills.sh](https://skills.sh/mattpocock/skills) copies editable skill files into the project. Use the whole-set form on `README.md`:
-
-<canonical-block name="skills-sh-whole-set">
+<canonical-block name="clone">
 
 ```bash
-npx skills@latest add mattpocock/skills
-```
-
-Pick the skills you want, and which coding agents to install them on. **The installer lets you choose which skills to take — make sure `setup-matt-pocock-skills` is one of them.**
-
-</canonical-block>
-
-…and the single-skill form wherever one skill is named on its own. Note that **`docs/` pages are not a consumer of this block**: ai-hero renders the install widget above the body, so a page that writes the commands out duplicates it. See [writing-docs.md](./writing-docs.md).
-
-<canonical-block name="skills-sh-one-skill">
-
-```bash
-npx skills@latest add mattpocock/skills --skill=<name>
-```
-
-```bash
-npx skills@latest update <name>
+git clone git@github.com:ngodn/denny-skills.git
+cd denny-skills
 ```
 
 </canonical-block>
 
-`skills@latest` is the pinned spelling in all three. The pages under `docs/` used to carry their own copy of these commands; those blocks are now deleted rather than corrected, because the site renders the install commands itself.
+<canonical-block name="link-unix">
 
-## The two routes are exclusive
+```bash
+./scripts/link-skills.sh
+```
 
-The plugin is a managed, read-only bundle you subscribe to. skills.sh writes files you own and edit. Installing both leaves the user with every skill twice — always say "pick one".
+</canonical-block>
+
+<canonical-block name="link-windows">
+
+```powershell
+.\scripts\link-skills.ps1
+```
+
+</canonical-block>
+
+Both scripts write into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (Codex and other Agent Skills-compatible harnesses). Linux and macOS get symlinks; Windows gets directory junctions, which need no admin rights or Developer Mode. Re-run after a skill is added, removed, or renamed; a plain `git pull` covers every other change.
+
+## The global rules file
+
+<canonical-block name="global-rules">
+
+```bash
+cp -n templates/CLAUDE.global.md ~/.claude/CLAUDE.md
+```
+
+</canonical-block>
+
+`templates/CLAUDE.global.md` is the team's global instructions file (writing style, ask when in doubt, research first, language and version, privilege escalation, reading past sessions). **The link scripts install it** as `~/.claude/CLAUDE.md` (and `~/.codex/AGENTS.md` when `~/.codex` exists), copied rather than linked because the last section is machine-specific, and never overwriting a copy that differs. The manual `cp -n` above is only for the plugin route, which does not run the scripts.
+
+## Claude Code plugin (alternative, not the default)
+
+`.claude-plugin/marketplace.json` makes the repo its own single-plugin marketplace:
+
+<canonical-block name="claude-code-plugin">
+
+```
+/plugin marketplace add ngodn/denny-skills
+/plugin install denny-skills@denny
+```
+
+</canonical-block>
+
+It gives a managed, read-only bundle. Linking and the plugin together leave the user with every skill twice: always say "pick one".
 
 ## Not the install story
 
-`.claude-plugin/marketplace.json` makes the repo its own single-plugin marketplace (`/plugin marketplace add mattpocock/skills`, then `/plugin install mattpocock-skills@mattpocock`). The official listing supersedes it. It is kept as a fallback for installing the repo directly — an unreleased commit, or a fork — and is **not** documented to users.
+`docs/` pages carry no install commands at all; they link back to `README.md` where one is needed. The upstream repo's routes (Claude Code official marketplace, skills.sh) belong to `mattpocock/skills`, not to this fork. Why the plugin exists but is not the default lives in [adr/0002-ship-as-a-claude-code-plugin.md](./adr/0002-ship-as-a-claude-code-plugin.md).

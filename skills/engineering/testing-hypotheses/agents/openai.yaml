@@ -1,0 +1,3 @@
+interface:
+  display_name: "Testing Hypotheses"
+  short_description: "Decide whether an effect is real"

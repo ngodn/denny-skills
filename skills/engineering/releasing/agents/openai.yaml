@@ -1,0 +1,3 @@
+interface:
+  display_name: "Releasing"
+  short_description: "Cut a release: commit, notes, artifact"

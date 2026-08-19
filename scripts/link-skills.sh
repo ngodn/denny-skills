@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# NOTE: This is a dev-only script, intended for use by maintainers of this repo.
-# It is not a supported installer. Modifications to it — or requests for
-# modifications — will not be approved.
+# The team installer for Linux and macOS (Windows: scripts/link-skills.ps1).
 #
 # Links all skills in the repository into the local skill directories used by
 # each agent harness:
-#   - ~/.claude/skills  — Claude Code
-#   - ~/.agents/skills  — Codex and other Agent Skills-compatible harnesses
+#   - ~/.claude/skills  (Claude Code)
+#   - ~/.agents/skills  (Codex and other Agent Skills-compatible harnesses)
 # Each entry is a symlink into this repo, so a `git pull` is all that's needed
-# to keep installed skills up to date.
+# to keep installed skills up to date. Re-run after adding, removing, or
+# renaming a skill.
+#
+# It also installs the team's global instructions file,
+# templates/CLAUDE.global.md, as ~/.claude/CLAUDE.md (and ~/.codex/AGENTS.md
+# when ~/.codex exists). It never overwrites a file that differs from the
+# template: it tells you so and leaves merging to you.
+#
+# Usage:
+#   ./scripts/link-skills.sh
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DESTS=("$HOME/.claude/skills" "$HOME/.agents/skills")
@@ -53,4 +60,22 @@ for DEST in "${DESTS[@]}"; do
     ln -sfn "$src" "$target"
     echo "linked $name -> $src ($DEST)"
   done
+done
+
+# ---- global instructions file -------------------------------------------------
+TEMPLATE="$REPO/templates/CLAUDE.global.md"
+targets=("$HOME/.claude/CLAUDE.md")
+[ -d "$HOME/.codex" ] && targets+=("$HOME/.codex/AGENTS.md")
+
+for target in "${targets[@]}"; do
+  if [ ! -e "$target" ]; then
+    mkdir -p "$(dirname "$target")"
+    cp "$TEMPLATE" "$target"
+    echo "installed global rules -> $target"
+  elif cmp -s "$TEMPLATE" "$target"; then
+    echo "global rules up to date ($target)"
+  else
+    echo "note: $target differs from templates/CLAUDE.global.md; not overwritten." >&2
+    echo "      Merge by hand, e.g.: diff \"$TEMPLATE\" \"$target\"" >&2
+  fi
 done

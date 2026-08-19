@@ -1,0 +1,3 @@
+interface:
+  display_name: "Self-Hosting"
+  short_description: "Edge, proxies, remote access on Linux"

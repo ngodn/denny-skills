@@ -1,0 +1,3 @@
+interface:
+  display_name: "Linux Kernel Packaging"
+  short_description: "Kernel patching, config, module signing"

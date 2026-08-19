@@ -1,0 +1,3 @@
+interface:
+  display_name: "CMDB Sync"
+  short_description: "Design a sync into a CMDB"

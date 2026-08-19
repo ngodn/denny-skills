@@ -1,0 +1,3 @@
+interface:
+  display_name: "ACID Transactions"
+  short_description: "Transactional integrity, isolation, locking, sagas"
