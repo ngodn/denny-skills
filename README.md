@@ -4,7 +4,9 @@ Agent skills for real engineering, not vibe coding. This is the shared skill set
 
 Developing real applications is hard. Approaches like GSD, BMAD, and Spec-Kit try to help by owning the process. But while doing so, they take away your control and make bugs in the process hard to resolve.
 
-These skills are designed to be small, easy to adapt, and composable. They work with any model. They're based on decades of engineering experience. Hack around with them. Propose changes. Enjoy.
+These skills are designed to be small, easy to adapt, and composable. They work with any model. Hack around with them. Propose changes. Enjoy.
+
+There are two halves. The **flows** take an idea from a grilling session through to shipped code, one skill per step. The **references** are knowledge distilled from real project work: how a deliverable gets generated, what proves a claim, the platform limits that cost a day to learn the first time. The flows tell an agent what to do next. The references stop it relearning what we already know.
 
 The repo started as a fork of [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). We maintain it here; upstream is kept as a remote so improvements can be pulled in and merged when they land.
 
@@ -147,7 +149,7 @@ The same tension shows up with agents. Agents are usually dropped into a project
 Example
 </summary>
 
-Here's an example from a course-video-manager project. Which one is easier to read?
+Two ways of saying the same thing about a video-course app. Which one is easier to read?
 
 - **BEFORE**: "There's a problem when a lesson inside a section of a course is made 'real' (i.e. given a spot in the file system)"
 - **AFTER**: "There's a problem with the materialization cascade"
@@ -183,7 +185,7 @@ For automated tests, a red-green-refactor loop is critical. This is where the ag
 
 The **[`/tdd`](./skills/engineering/tdd/SKILL.md) skill** slots into any project. It encourages red-green-refactor and gives the agent plenty of guidance on what makes good and bad tests.
 
-For debugging, the **[`/diagnosing-bugs`](./skills/engineering/diagnosing-bugs/SKILL.md)** skill that wraps best debugging practices into a disciplined loop, gated phase by phase.
+For debugging, **[`/diagnosing-bugs`](./skills/engineering/diagnosing-bugs/SKILL.md)** wraps best debugging practices into a disciplined loop, gated phase by phase.
 
 ### #4: We Built A Ball Of Mud
 
@@ -205,9 +207,27 @@ This is built in to every layer of these skills:
 
 And crucially, [`/improve-codebase-architecture`](./skills/engineering/improve-codebase-architecture/SKILL.md) surveys a codebase for deepening opportunities and hands you the candidates. Run it on your codebase once every few days. It is a survey, not a rescue: on a genuinely old codebase it will find real candidates, but it won't untangle the mud for you.
 
+### #5: We Keep Solving The Same Problem Again
+
+> "The palest ink is better than the best memory."
+>
+> Chinese proverb
+
+**The Problem**: the expensive knowledge in a team is not the code. It is knowing that this platform's async jobs carry no user context, that this document generator needs its data validated before it writes a file, that this approach was tried last quarter and refuted for a specific reason. None of that lives in the codebase. It lives in whoever was there, and it leaves when they are busy or gone.
+
+An agent makes this worse, not better. It will confidently re-derive a wrong answer that someone already paid to learn, every session, forever.
+
+**The Fix** is to write it down where the agent reads it. Three groups of skills here do that:
+
+- **Deliverables**: [`/office-docs`](./skills/engineering/office-docs/SKILL.md), [`/client-deliverables`](./skills/productivity/client-deliverables/SKILL.md), [`/slide-decks`](./skills/productivity/slide-decks/SKILL.md), [`/diagrams`](./skills/productivity/diagrams/SKILL.md). How a document, workbook, deck or diagram actually gets produced, and what is allowed in one that leaves the building.
+- **Evidence**: [`/verifying-claims`](./skills/engineering/verifying-claims/SKILL.md), [`/testing-hypotheses`](./skills/engineering/testing-hypotheses/SKILL.md), [`/research-log`](./skills/productivity/research-log/SKILL.md). How to know a thing is true before saying it, how to tell a real effect from a small-sample accident, and where the verdict gets written so nobody reopens it.
+- **Platform references**: [`/device42`](./skills/engineering/device42/SKILL.md), [`/jsm-assets`](./skills/engineering/jsm-assets/SKILL.md), [`/forge-apps`](./skills/engineering/forge-apps/SKILL.md), [`/cmdb-sync`](./skills/engineering/cmdb-sync/SKILL.md). Piles of specific facts about the tools this team works in daily. Read one before writing integration code, not after it fails.
+
+The same idea drives [templates/CLAUDE.global.md](./templates/CLAUDE.global.md), the global rules file the installer sets up: the working habits that would otherwise have to be re-explained to every agent, on every machine, forever.
+
 ### Summary
 
-Software engineering fundamentals matter more than ever. These skills condense those fundamentals into repeatable practices, so the whole team ships better apps at the same pace. Enjoy.
+Software engineering fundamentals matter more than ever. These skills condense those fundamentals, and the specifics this team has paid to learn, into repeatable practices, so everyone ships at the same pace. Enjoy.
 
 ## Reference
 
@@ -231,24 +251,24 @@ Skills for daily code work.
 
 **Model-invoked**
 
-- **[office-docs](./skills/engineering/office-docs/SKILL.md)**: Generate Word, Excel and PowerPoint deliverables in Python: the generator package shape, python-docx and openpyxl patterns, and validating the data before anything is written.
+- **[tdd](./skills/engineering/tdd/SKILL.md)**: Test-driven development with a red-green-refactor loop. Builds features or fixes bugs one vertical slice at a time.
+- **[code-review](./skills/engineering/code-review/SKILL.md)**: Two-axis review of the diff since a fixed point: **Standards** (does it follow the repo's coding standards, plus a Fowler smell baseline?) and **Spec** (does it faithfully implement the originating issue/spec?), run as parallel sub-agents so neither pollutes the other.
+- **[diagnosing-bugs](./skills/engineering/diagnosing-bugs/SKILL.md)**: Disciplined diagnosis loop for hard bugs and performance regressions: build a feedback loop that goes red on this bug → minimise → hypothesise → instrument → fix → regression-test.
+- **[resolving-merge-conflicts](./skills/engineering/resolving-merge-conflicts/SKILL.md)**: Work through an in-progress git merge or rebase conflict hunk by hunk, resolving by intent traced to each side's primary source, then finish the operation. Never `--abort`.
 - **[releasing](./skills/engineering/releasing/SKILL.md)**: Cut a release: commit and changelog conventions, the version-bump checklist, and building a portable Linux binary that runs somewhere other than the machine that built it.
+- **[prototype](./skills/engineering/prototype/SKILL.md)**: Build a throwaway prototype to answer a design question: a single shareable HTML file for state/logic questions, or several radically different UI variations toggleable from one route.
+- **[wizard](./skills/engineering/wizard/SKILL.md)**: Generate an interactive bash wizard that walks a human through steps only they can perform: provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover.
+- **[codebase-design](./skills/engineering/codebase-design/SKILL.md)**: Shared discipline and vocabulary for designing deep modules: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface.
+- **[domain-modeling](./skills/engineering/domain-modeling/SKILL.md)**: Actively build and sharpen a project's domain model: challenge terms against the glossary, stress-test with edge-case scenarios, and update `CONTEXT.md` and ADRs inline.
+- **[acid-transactions](./skills/engineering/acid-transactions/SKILL.md)**: Reference and review checklist for transactional integrity: the four ACID promises, the anomalies, isolation levels per engine, locking and the atomic guarded UPDATE, and what replaces ACID across services (saga, outbox, idempotency).
+- **[office-docs](./skills/engineering/office-docs/SKILL.md)**: Generate Word, Excel and PowerPoint deliverables in Python: the generator package shape, python-docx and openpyxl patterns, and validating the data before anything is written.
 - **[verifying-claims](./skills/engineering/verifying-claims/SKILL.md)**: Don't state it until you can show it: ground-truth sources, self-verifying tests, negative controls, and the two checks any written claim has to pass.
 - **[testing-hypotheses](./skills/engineering/testing-hypotheses/SKILL.md)**: Decide whether an effect is real: permutation and holdout controls, the small-sample traps that invert at scale, and a verdict vocabulary that keeps settled questions closed.
+- **[research](./skills/engineering/research/SKILL.md)**: Investigate a question against high-trust primary sources and capture the findings as a cited Markdown file in the repo, run as a background agent.
 - **[device42](./skills/engineering/device42/SKILL.md)**: Working reference for Device42 discovery and querying: per-protocol pre-check behaviour, port and privilege requirements, SNMP traps, and DOQL quirks.
-- **[cmdb-sync](./skills/engineering/cmdb-sync/SKILL.md)**: Design an idempotent, resumable sync from an external inventory into a CMDB: identity over keys, reference resolution, relocation, and classify-and-route.
 - **[jsm-assets](./skills/engineering/jsm-assets/SKILL.md)**: Working reference for Jira Service Management Assets as a data platform: the hard limits, the AQL and REST gotchas, and the visibility model the docs get wrong.
 - **[forge-apps](./skills/engineering/forge-apps/SKILL.md)**: Build an Atlassian Forge app that does real work: the runtime limits, why async has no user context, storage that isn't the KV store, and the impersonation nuance.
-- **[prototype](./skills/engineering/prototype/SKILL.md)**: Build a throwaway prototype to answer a design question: a single shareable HTML file for state/logic questions, or several radically different UI variations toggleable from one route.
-- **[diagnosing-bugs](./skills/engineering/diagnosing-bugs/SKILL.md)**: Disciplined diagnosis loop for hard bugs and performance regressions: build a feedback loop that goes red on this bug → minimise → hypothesise → instrument → fix → regression-test.
-- **[research](./skills/engineering/research/SKILL.md)**: Investigate a question against high-trust primary sources and capture the findings as a cited Markdown file in the repo, run as a background agent.
-- **[tdd](./skills/engineering/tdd/SKILL.md)**: Test-driven development with a red-green-refactor loop. Builds features or fixes bugs one vertical slice at a time.
-- **[domain-modeling](./skills/engineering/domain-modeling/SKILL.md)**: Actively build and sharpen a project's domain model: challenge terms against the glossary, stress-test with edge-case scenarios, and update `CONTEXT.md` and ADRs inline.
-- **[codebase-design](./skills/engineering/codebase-design/SKILL.md)**: Shared discipline and vocabulary for designing deep modules: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface.
-- **[acid-transactions](./skills/engineering/acid-transactions/SKILL.md)**: Reference and review checklist for transactional integrity: the four ACID promises, the anomalies, isolation levels per engine, locking and the atomic guarded UPDATE, and what replaces ACID across services (saga, outbox, idempotency).
-- **[code-review](./skills/engineering/code-review/SKILL.md)**: Two-axis review of the diff since a fixed point: **Standards** (does it follow the repo's coding standards, plus a Fowler smell baseline?) and **Spec** (does it faithfully implement the originating issue/spec?), run as parallel sub-agents so neither pollutes the other.
-- **[resolving-merge-conflicts](./skills/engineering/resolving-merge-conflicts/SKILL.md)**: Work through an in-progress git merge or rebase conflict hunk by hunk, resolving by intent traced to each side's primary source, then finish the operation. Never `--abort`.
-- **[wizard](./skills/engineering/wizard/SKILL.md)**: Generate an interactive bash wizard that walks a human through steps only they can perform: provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover.
+- **[cmdb-sync](./skills/engineering/cmdb-sync/SKILL.md)**: Design an idempotent, resumable sync from an external inventory into a CMDB: identity over keys, reference resolution, relocation, and classify-and-route.
 
 ### Productivity
 
@@ -264,9 +284,22 @@ General workflow tools, not code-specific.
 
 **Model-invoked**
 
+- **[grilling](./skills/productivity/grilling/SKILL.md)**: Interview the user relentlessly about a plan, decision, or idea until every branch of the design tree is resolved. The reusable interview primitive behind `grill-me`, `grill-with-docs`, `triage`, `wayfinder` and `improve-codebase-architecture`.
+- **[writing-for-agents](./skills/productivity/writing-for-agents/SKILL.md)**: Writing documents for agents: skills, AGENTS.md/CLAUDE.md, and any doc an agent reaches by a pointer.
 - **[client-deliverables](./skills/productivity/client-deliverables/SKILL.md)**: The editorial discipline for anything that leaves the building: customer-facing and internal stay separate files, scope facts are sourced, and the pre-send sweep.
 - **[slide-decks](./skills/productivity/slide-decks/SKILL.md)**: Produce a deck through an AI design tool or by editing the pptx directly, with the slide-spec rule that decides which of those two outputs you get.
 - **[diagrams](./skills/productivity/diagrams/SKILL.md)**: Architecture and network diagrams in mermaid: the render pipeline, the styling conventions that carry meaning, and when a table beats a picture.
 - **[research-log](./skills/productivity/research-log/SKILL.md)**: Keep a long, multi-session investigation from re-litigating settled ground, with a status doc and an index that records what was refuted and why.
-- **[grilling](./skills/productivity/grilling/SKILL.md)**: Interview the user relentlessly about a plan, decision, or idea until every branch of the design tree is resolved. The reusable interview primitive behind `grill-me`, `grill-with-docs`, `triage`, `wayfinder` and `improve-codebase-architecture`.
-- **[writing-for-agents](./skills/productivity/writing-for-agents/SKILL.md)**: Writing documents for agents: skills, AGENTS.md/CLAUDE.md, and any doc an agent reaches by a pointer.
+
+### Not shipped in the plugin
+
+Two buckets are installed by the link scripts but deliberately left out of the Claude Code plugin, the lists above, and the docs tree:
+
+- [`skills/misc/`](./skills/misc/README.md), kept around but rarely reached for.
+- [`skills/in-progress/`](./skills/in-progress/README.md), beta, public on purpose, and free to change or disappear.
+
+Each bucket's own README lists what is in it.
+
+## Reading more about a skill
+
+Every skill in `engineering/` and `productivity/` has a page under [`docs/`](./docs) that says what it does, when to reach for it, the questions people actually ask about it, and how you know it is working. Start with [ask-denny](./docs/engineering/ask-denny.md) if you are not sure which skill you want; it maps the whole set and how the pieces relate.
