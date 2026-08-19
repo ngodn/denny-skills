@@ -1,6 +1,6 @@
 {
   "name": "denny-skills",
-  "version": "1.2.3",
+  "version": "1.0.1",
   "description": "Denny's agent skills for real engineering: grilling, spec/ticket flows, TDD, code review, domain modelling and more. Maintained for the team so every agent works the same way.",
   "author": {
     "name": "Denny Aprilio Pratama",

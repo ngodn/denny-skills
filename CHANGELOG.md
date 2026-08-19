@@ -1,6 +1,41 @@
 # denny-skills
 
-> Forked from [mattpocock/skills](https://github.com/mattpocock/skills). Entries up to and including 1.2.3 are the upstream history and keep their original links.
+## 1.0.1
+
+The first release of this fork. Version numbering restarts here: it is not a
+continuation of the upstream project's line.
+
+### Added
+
+- Skills for producing deliverables: `office-docs` for generating Word, Excel and PowerPoint files in Python, `client-deliverables` for what belongs in something that leaves the building, `slide-decks` for building a deck through a design tool or by editing the file directly, and `diagrams` for architecture and network diagrams in mermaid.
+- Skills for evidence: `verifying-claims` for knowing a thing is true before saying it, `testing-hypotheses` for telling a real effect from a small-sample accident, and `research-log` for keeping a long investigation from re-arguing settled ground.
+- `releasing`, for commit and changelog conventions, the version-bump checklist, and portable Linux binaries.
+- Platform references for tools this team works in daily: `device42`, `jsm-assets`, `forge-apps` and `cmdb-sync`.
+- `acid-transactions`, a reference and review checklist for transactional integrity.
+- Three skills in the `misc` bucket, installed by the link scripts but not shipped in the plugin: `linux-kernel-packaging`, `ue-modding` and `self-hosting`.
+- A shared global rules file at `templates/CLAUDE.global.md`, installed alongside the skills, carrying the working habits that would otherwise be re-explained to every agent on every machine.
+- Windows support: `scripts/link-skills.ps1` installs the same set using directory junctions, which need no admin rights.
+- The installer keeps backups. Anything it replaces is copied into `backup/` inside your clone first, and the path is printed when it finishes. `--list-backups` shows what is there and `--restore <id>` puts one back.
+
+### Changed
+
+- The project is now `denny-skills`. `ask-matt` is `ask-denny` and `setup-matt-pocock-skills` is `setup-denny-skills`.
+- Installation is a clone plus one script, on Linux, macOS and Windows. The Claude Code plugin remains available as an alternative route.
+- `diagnosing-bugs` gained a layered-systems discipline for faults that span several independent layers.
+- `domain-modeling` records a decision with its rejected alternative and the consequences accepted, not just the decision.
+
+### Removed
+
+- Newsletter and marketplace copy that belonged to the upstream project.
+- Every em dash outside this changelog.
+
+### Upgrading
+
+Nothing to do if you are installing for the first time. If you were tracking this repo before the rebrand, re-clone rather than pull: the history was rewritten and your existing clone cannot fast-forward.
+
+## Pre-fork history
+
+Everything below is the release history of [mattpocock/skills](https://github.com/mattpocock/skills), kept for reference. Its version numbers belong to that project, and the pull request and commit links point there.
 
 ## 1.2.3
 
