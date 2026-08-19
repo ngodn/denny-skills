@@ -1,1 +1,9 @@
 node_modules
+
+# Working area for the current task. Never committed: it holds raw notes,
+# extracts, and anything mined from other repos or chat history, which is
+# exactly the material that must not reach a public remote.
+.scratchpad/
+
+# Installer backups of your own machine's config. Personal, never committed.
+backup/

@@ -45,6 +45,19 @@ cp -n templates/CLAUDE.global.md ~/.claude/CLAUDE.md
 
 `templates/CLAUDE.global.md` is the team's global instructions file (writing style, ask when in doubt, research first, language and version, privilege escalation, reading past sessions). **The link scripts install it** as `~/.claude/CLAUDE.md` (and `~/.codex/AGENTS.md` when `~/.codex` exists), copied rather than linked because the last section is machine-specific, and never overwriting a copy that differs. The manual `cp -n` above is only for the plugin route, which does not run the scripts.
 
+## Backups and restore
+
+<canonical-block name="backup-restore">
+
+```bash
+./scripts/link-skills.sh --list-backups
+./scripts/link-skills.sh --restore <id>
+```
+
+</canonical-block>
+
+The installer copies anything it is about to replace (a real skill directory the user wrote themselves, a global rules file that differs from the template) into `backup/<timestamp>/` inside the clone, and prints the path on success. `backup/` is gitignored: it holds the user's own machine config and must never reach a remote. The Windows equivalents are `-ListBackups` and `-Restore <id>`.
+
 ## Claude Code plugin (alternative, not the default)
 
 `.claude-plugin/marketplace.json` makes the repo its own single-plugin marketplace:

@@ -103,6 +103,22 @@ For anything that changes infrastructure, is ambiguous, or is hard to undo, pres
 - Save reference material you clone or download into the project's own tree, not a throwaway location.
 - Write findings where they get loaded again. A preference recorded in a file that nothing reads is a preference that silently stops being honored, so the index entry matters as much as the file.
 
+## Keep working files in the project, not in system temp
+
+Scratch work goes in a `.scratchpad/` directory inside the project you are working on, gitignored. Never `/tmp` or a system temp directory.
+
+- Notes, extracts, intermediate output, briefs, downloaded reference material: all of it lives with the project it belongs to.
+- System temp is wiped on reboot and is invisible when you come back to the work a week later. Losing an afternoon of extraction because it sat in `/tmp` is a self-inflicted wound.
+- Add `.scratchpad/` to `.gitignore` when you create it. Scratch often holds material pulled from other repositories, chat history, or client work, and much of it must never reach a remote.
+
+## Put every project under git, even the ones that are not code
+
+If a directory holds work worth keeping, `git init` it. Notes, configuration, documents, a research folder: all of it.
+
+- The point is rollback. An agent editing files in bulk needs an undo, and git is the only one that reliably exists.
+- Commit before a large or destructive change, not just after finishing something.
+- This costs nothing and has saved entire directories from a bad bulk edit.
+
 ## Look at other chat sessions for more context
 
 Past and current Claude Code transcripts live under `~/.claude/projects`. When the current conversation lacks context that an earlier session likely has (a decision, a path, an error, how something was set up), read those transcripts instead of guessing or re-asking.

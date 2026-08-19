@@ -65,6 +65,20 @@ Pick one route. Linking and the plugin together gives you every skill twice. The
 
 </details>
 
+**Nothing is destroyed silently.** If you already have your own copy of a skill, or a global rules file that differs from the template, the installer copies it into `backup/<timestamp>/` inside the clone before touching anything, and prints the path when it finishes.
+
+```bash
+./scripts/link-skills.sh --list-backups      # what can be restored
+./scripts/link-skills.sh --restore <id>      # put one back
+```
+
+```powershell
+.\scripts\link-skills.ps1 -ListBackups
+.\scripts\link-skills.ps1 -Restore <id>
+```
+
+`backup/` is gitignored, so your machine's config never leaves your clone.
+
 ### 3. Update
 
 ```bash
