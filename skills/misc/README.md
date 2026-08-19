@@ -1,6 +1,6 @@
 # Misc
 
-Kept around but rarely reached for, and not promoted in the plugin.
+Kept around but rarely reached for. Installed by the link scripts, but not promoted: no docs page, and not listed in the top-level README.
 
 - **[git-guardrails-claude-code](./git-guardrails-claude-code/SKILL.md)**: Set up Claude Code hooks to block dangerous git commands (push, reset --hard, clean, etc.) before they execute.
 - **[migrate-to-shoehorn](./migrate-to-shoehorn/SKILL.md)**: Migrate test files from `as` type assertions to @total-typescript/shoehorn.

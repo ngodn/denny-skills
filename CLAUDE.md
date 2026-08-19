@@ -3,12 +3,12 @@ Skills are organized into bucket folders under `skills/`:
 - `engineering/`: daily code work
 - `productivity/`: daily non-code workflow tools
 - `misc/`: kept around but rarely used, not promoted
-- `in-progress/`: beta: public on purpose, feedback wanted, not shipped in the plugin
+- `in-progress/`: beta: public on purpose, feedback wanted, not promoted
 - `deprecated/`: no longer used
 
-Every skill in `engineering/` or `productivity/` (the **promoted** buckets) must have a reference in the top-level `README.md` and an entry in `.claude-plugin/plugin.json`'s `skills` array (the Claude Code plugin ships exactly the promoted set). Skills in `misc/`, `in-progress/`, and `deprecated/` must not appear in either.
+Every skill in `engineering/` or `productivity/` (the **promoted** buckets) must have a reference in the top-level `README.md` and an entry in `.claude-plugin/plugin.json`'s `skills` array (the two lists must agree; `claude plugin validate . --strict` is what checks it). Skills in `misc/`, `in-progress/`, and `deprecated/` must not appear in either.
 
-Install commands are copied verbatim from [.agents/install-block.md](./.agents/install-block.md). The default route is a local clone plus `scripts/link-skills.sh` (Linux/macOS) or `scripts/link-skills.ps1` (Windows). `.claude-plugin/marketplace.json` makes the repo its own single-plugin marketplace as an alternative route. Run `claude plugin validate . --strict` after touching either manifest. Why a Claude plugin but not (yet) a Codex one lives in [.agents/adr/0002-ship-as-a-claude-code-plugin.md](./.agents/adr/0002-ship-as-a-claude-code-plugin.md).
+Install commands are copied verbatim from [.agents/install-block.md](./.agents/install-block.md). The only route we publish is a local clone plus `scripts/link-skills.sh` (Linux/macOS) or `scripts/link-skills.ps1` (Windows). The plugin manifests under `.claude-plugin/` are kept as a consistency check rather than an install route: run `claude plugin validate . --strict` after touching either one. Why a Claude plugin but not (yet) a Codex one lives in [.agents/adr/0002-ship-as-a-claude-code-plugin.md](./.agents/adr/0002-ship-as-a-claude-code-plugin.md).
 
 This repo is a fork of `mattpocock/skills`, kept as the `upstream` git remote; `origin` is `ngodn/denny-skills`. When merging upstream, keep our names (`ask-denny`, `setup-denny-skills`, `denny-skills`) and our install story.
 

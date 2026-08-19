@@ -1,8 +1,8 @@
 # In Progress
 
-Beta. These skills are public on purpose: try them and tell the team what breaks. They're excluded from the plugin and the top-level README until they graduate to a stable bucket, they get no docs pages, and they can change or disappear without warning.
+Beta. These skills are public on purpose: try them and tell the team what breaks. They're excluded from the top-level README until they graduate to a stable bucket, they get no docs pages, and they can change or disappear without warning.
 
-The link scripts (`scripts/link-skills.sh`, `scripts/link-skills.ps1`) already install these alongside everything else; only the plugin route leaves them out.
+The link scripts (`scripts/link-skills.sh`, `scripts/link-skills.ps1`) install these alongside everything else, so there is nothing extra to do to try one.
 
 - **[loop-me](./loop-me/SKILL.md)**: Grill yourself into implementable workflow specs over multiple sessions, using the current directory as a stateful workspace. User-invoked.
 - **[writing-beats](./writing-beats/SKILL.md)**: Shape an article as a journey of beats, choose-your-own-adventure style. Pick a starting beat, write only that beat, then pivot to the next, until the article reaches a natural end.

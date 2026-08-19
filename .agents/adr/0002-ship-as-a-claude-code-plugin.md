@@ -43,3 +43,9 @@ Verified 2026-08-05, on Claude Code 2.1.222, against the live listing:
 ## Update, 2026-08-19 (fork)
 
 This repo is now `ngodn/denny-skills`, a team-maintained fork. Everything above about the official marketplace listing and skills.sh describes the upstream repo and does not apply here: this fork is not listed anywhere. The default install route is a local clone plus `scripts/link-skills.sh` (Linux/macOS) or `scripts/link-skills.ps1` (Windows), and `.claude-plugin/marketplace.json` is retained so `/plugin marketplace add ngodn/denny-skills` works as an alternative. The plugin manifests are kept valid (`claude plugin validate . --strict`) so that route keeps working. The install wording lives in [.agents/install-block.md](../install-block.md).
+
+## Update, 2026-08-19 (plugin withdrawn as an install route)
+
+The plugin is no longer offered to users at all. Adding the marketplace works (verified against the public repo: `claude plugin marketplace add ngodn/denny-skills` resolves and lists `denny-skills`), but publishing it alongside the link scripts gives a reader two routes that install the same skills twice, and the scripts are the better one: they also install the global rules file, and they back up whatever they replace.
+
+The manifests stay. `claude plugin validate . --strict` reads them, and that is what catches a skill added to a promoted bucket without a matching entry, or the reverse. Treat `.claude-plugin/` as a consistency check on the promoted set, not as a shipping vehicle. If the plugin is ever offered again, the wording goes in [.agents/install-block.md](../install-block.md) first.

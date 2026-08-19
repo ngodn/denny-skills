@@ -12,7 +12,7 @@ The repo started as a fork of [mattpocock/skills](https://github.com/mattpocock/
 
 ## Installation (2-minute setup)
 
-One route: clone this repo and link the skills into your agent's skill directory. Every entry is a link back into the clone, so `git pull` is the whole update story. Works on Linux, macOS, and Windows, and on Claude Code, Codex, and any other Agent Skills-compatible harness.
+Clone this repo and link the skills into your agent's skill directory. Every entry is a link back into the clone, so `git pull` is the whole update story. Works on Linux, macOS, and Windows, and on Claude Code, Codex, and any other Agent Skills-compatible harness.
 
 ### 1. Clone
 
@@ -50,20 +50,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\link-skills.ps1
 ```
 
 Creates directory junctions into `%USERPROFILE%\.claude\skills` and `%USERPROFILE%\.agents\skills`. Junctions need no admin rights or Developer Mode.
-
-</details>
-
-<details>
-<summary><strong>Claude Code plugin (alternative)</strong></summary>
-
-The repo is also its own single-plugin marketplace, if you'd rather have a managed, read-only bundle:
-
-```
-/plugin marketplace add ngodn/denny-skills
-/plugin install denny-skills@denny
-```
-
-Pick one route. Linking and the plugin together gives you every skill twice. The plugin route does not install the global rules file; copy it by hand (`cp -n templates/CLAUDE.global.md ~/.claude/CLAUDE.md`).
 
 </details>
 
@@ -291,9 +277,9 @@ General workflow tools, not code-specific.
 - **[diagrams](./skills/productivity/diagrams/SKILL.md)**: Architecture and network diagrams in mermaid: the render pipeline, the styling conventions that carry meaning, and when a table beats a picture.
 - **[research-log](./skills/productivity/research-log/SKILL.md)**: Keep a long, multi-session investigation from re-litigating settled ground, with a status doc and an index that records what was refuted and why.
 
-### Not shipped in the plugin
+### Not promoted
 
-Two buckets are installed by the link scripts but deliberately left out of the Claude Code plugin, the lists above, and the docs tree:
+Two buckets are installed by the link scripts but deliberately left out of the lists above and the docs tree:
 
 - [`skills/misc/`](./skills/misc/README.md), kept around but rarely reached for.
 - [`skills/in-progress/`](./skills/in-progress/README.md), beta, public on purpose, and free to change or disappear.

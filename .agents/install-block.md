@@ -58,21 +58,8 @@ cp -n templates/CLAUDE.global.md ~/.claude/CLAUDE.md
 
 The installer copies anything it is about to replace (a real skill directory the user wrote themselves, a global rules file that differs from the template) into `backup/<timestamp>/` inside the clone, and prints the path on success. `backup/` is gitignored: it holds the user's own machine config and must never reach a remote. The Windows equivalents are `-ListBackups` and `-Restore <id>`.
 
-## Claude Code plugin (alternative, not the default)
-
-`.claude-plugin/marketplace.json` makes the repo its own single-plugin marketplace:
-
-<canonical-block name="claude-code-plugin">
-
-```
-/plugin marketplace add ngodn/denny-skills
-/plugin install denny-skills@denny
-```
-
-</canonical-block>
-
-It gives a managed, read-only bundle. Linking and the plugin together leave the user with every skill twice: always say "pick one".
-
 ## Not the install story
 
-`docs/` pages carry no install commands at all; they link back to `README.md` where one is needed. The upstream repo's routes (Claude Code official marketplace, skills.sh) belong to `mattpocock/skills`, not to this fork. Why the plugin exists but is not the default lives in [adr/0002-ship-as-a-claude-code-plugin.md](./adr/0002-ship-as-a-claude-code-plugin.md).
+`docs/` pages carry no install commands at all; they link back to `README.md` where one is needed. The upstream repo's routes (Claude Code official marketplace, skills.sh) belong to `mattpocock/skills`, not to this fork.
+
+**The Claude Code plugin is not offered as an install route.** `.claude-plugin/plugin.json` and `marketplace.json` are kept because `claude plugin validate . --strict` uses them to catch a skill that exists on disk but is missing from the promoted set, and vice versa. Adding the marketplace does work, but documenting it would give a reader two routes that install the same skills twice, so the link scripts are the only route we publish. Background in [adr/0002-ship-as-a-claude-code-plugin.md](./adr/0002-ship-as-a-claude-code-plugin.md).
