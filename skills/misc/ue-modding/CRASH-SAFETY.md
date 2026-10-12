@@ -1,37 +1,49 @@
-Crash-safety rules for [ue-modding](SKILL.md): rules for any code, scripting or native, that reads or writes live engine state from outside the engine. Each one names a failure mode a generic exception guard does not catch, so treat this as a checklist to run over a change before trying it live, not just background reading.
+# Live-state ownership and restoration
 
-## Enumerate, never guess
+Apply these checks from [ue-modding](SKILL.md) to the live state being touched.
+They supplement the installed framework's contract; they do not describe every
+Unreal binding as having the same crash behavior.
 
-Reading a property that doesn't exist on a given object, or calling a function by a speculative or half-remembered name, crashes past a generic exception guard rather than erroring gracefully. Always discover real names through the framework's own enumeration API, or a full SDK dump, before reading a property or calling a function.
+## Types and lifetime
 
-## Wrap name-typed values in the engine's interned name type
+Resolve real properties and signatures before access. Use the binding's supported
+name, string, array and object types. Native memory corruption may bypass script
+exception guards, so a guarded speculative call is still speculative.
 
-An API that expects an interned or name-pool type (rather than a plain string) for lookups like bone or socket names will crash on a raw string instead of failing cleanly. Always construct the engine's own name type first, never pass a plain string where a name type is expected.
+Cache identities through supported weak/object handles or validated lifecycle
+tracking. Raw pointers, property offsets and animation-node references need a
+known layout and lifetime. Re-resolve after mesh/AnimInstance replacement, world
+transition, destruction or reload. The owning AnimInstance is not permanently
+stable either. A non-null address is not proof that its former object is alive.
 
-## Never cache handles into per-frame graph state
+Schedule changes on the owning thread and phase. Game-thread execution alone
+does not make writes to concurrently evaluated animation data safe. Use the
+engine/framework's synchronization or an established input handoff.
 
-References into a live animation-graph or per-node object can go stale between ticks. Re-resolve every tick rather than caching a handle into that per-frame state, while still caching the *stable* owning object (the instance itself, which doesn't move) plus any fixed offsets into it.
+## Shared state and restoration
 
-## Never cache actors across a level boundary
+Capture a shared asset's true original once per identity before mutation; avoid
+recapturing a modified value as its original. Keep restoration data separate from
+current user intent. If the user changes a setting during temporary playback,
+restoring an earlier playback snapshot must not overwrite that newer choice.
 
-A cached actor or object reference held across a level-streaming transition can end up pointing at a freed object. Re-fetch the live handle on every use, deliberately never caching one across a span of time in which a level transition might occur.
+Define teardown before enabling callbacks: stop new work, drain or synchronize
+in-flight work, restore owned state while its owner is valid, unregister hooks,
+then release code/resources. The exact order depends on the loader and whether
+restoration needs a game-thread callback. Verify it rather than assuming a single
+gate flag solves unloading. Restore only state this mod owns.
 
-## Capture the true original before mutating a shared asset
+## Compatibility and scope
 
-A shared engine asset edited at runtime, a blend space or a data table, is process-global, not per-actor: editing it in place affects every user of that asset for the rest of the process, and nothing resets it automatically. Any such edit must capture the true original value exactly once, keyed by identity, before the first modification, and restore it explicitly on stop, unload, or level change. Guard against re-arming while the asset is already in a modified state, which would capture the modified state as if it were the original, a distinct and recurring failure class worth naming and watching for on its own.
+Check skeleton, pose space and additive mode before animation replacement.
+Large deformations are not successful motion merely because a metric changed.
 
-## Absolute and additive animation data are not interchangeable
+Other mods can write the same state or hook the same function. Inspect hook-chain
+support, ordering and ownership before choosing coordination, consolidation or
+incompatibility detection. Multiple hooks are not inherently unworkable, and a
+single merged mod is not the only possible solution.
 
-Writing absolute (non-additive) animation data into a slot that composites additively deforms the result violently. A large measured change in some metric, bone displacement, for instance, can look like a spectacular success while actually being corrupted geometry. Cross-check any such metric against a sane baseline magnitude; "it changed a lot" is not the same as "it worked."
-
-## An exception guard has real limits
-
-Wrapping a reflected call in an exception guard protects against some failure classes, a missing property, a thrown exception, but not out-of-bounds memory writes or some marshalling errors, which crash straight past the guard regardless of whether it's present.
-
-## Do a cheap safety check before anything that could put the player somewhere dangerous
-
-Before an automated action that could move the player into danger, an automated dodge near a ledge, for example, run a cheap synchronous safety check first (a short ring of downward line traces is a common shape), and treat any uncertain or failed check result as unsafe, falling back to a strictly safer default action rather than the risky one. Fail-safe by construction: if the check's own dependency is unavailable or throws, the default answer is "unsafe," never "proceed."
-
-## Two mods hooking the same function fight over the last write
-
-When two independent mods each install a hook on the same target function and both write the same output, the result is nondeterministic, last writer wins, per call. The durable fix is to merge the two into one mod that owns the single hook and arbitrates internally, rather than trying to make two independent hooks coexist. A hookable extension point in someone else's framework is often, in practice, a singleton resource.
+For automated gameplay checks, stay within the authorized interaction and preserve
+settings. Use safe scenes for movement tests; do not assume a trace proves every
+hazard absent. Prefer offline or stationary inspection when that answers the
+question without gameplay input.

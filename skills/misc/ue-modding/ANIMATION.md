@@ -1,31 +1,81 @@
-Animation and skeleton engineering for [ue-modding](SKILL.md): generalisable technique for driving character animation and secondary motion in a live, running game, with no editor and no engine source access beyond what you can read for a specific serializer.
+# Skeletons, animation and secondary motion
 
-## Bone registry keyed by naming pattern
+Use this branch of [ue-modding](SKILL.md) for authored assets and live character
+behavior. Recover the project's accepted skeleton, fitting and physics recipes
+before changing them. Use [TOOLCHAIN.md](TOOLCHAIN.md) for import/cook details.
 
-Build a cached registry of every bone on a character, keyed by a naming pattern (a chain prefix, a family name) rather than by hardcoded literal bone names. A pattern-keyed registry survives an asset or body-mesh swap that changes the underlying mesh but keeps the same naming convention; a registry of hardcoded names breaks the moment the mesh changes.
+## Establish the actual skeleton contract
 
-## The evaluated pose buffer is read-only for your purposes
+Compare bone names, parents, local reference transforms, root motion, retarget
+settings and weighted/helper bones. Matching names or bone counts alone does not
+establish compatibility. Preserve the mesh bind pose separately from the shared
+skeleton asset. Resolve mesh-local indices when the mesh changes; naming patterns
+can help discovery, but explicit validated mappings are appropriate for retargeting.
 
-The live, already-evaluated per-bone component-space transform array can be located and read for measurement or diagnostics. Writing to it directly is a dead end: the animation worker recomputes and overwrites that buffer after the point where an external write could take effect. Drive an actual pose change through the animation graph's own nodes, a bone-modifier node, for instance, rather than racing the pose buffer with a direct write.
+Verify same-skeleton playback before retargeting. For cross-skeleton work, use
+the game's established retarget/export path and inspect representative moving
+poses, hands, feet, attachments and facial curves. Compare decoded source motion,
+authored output and runtime output to locate the first divergence.
 
-## Forcing a pose by overwriting blend-space samples
+## Find the owner of each motion
 
-A blend space normally samples between several animation sequences by parameters like speed or direction. Overwriting every sample's animation pointer with the same target sequence forces that one animation out regardless of the blend parameters, with no hooks and no input synthesis needed. Two hard gotchas: it mutates a shared asset, so the capture-before-mutate rule in crash safety applies in full, and only same-skeleton swaps are safe; a skeleton mismatch that the editor would normally reject at author time has no equivalent safety guard at runtime, and will crash.
+Inspect the main AnimBP, linked layers, post-process graph, Control Rig, physics
+asset, cloth and any runtime override. Track which one evaluates and which one
+writes each affected region. Apparent doubled motion is a hypothesis until the
+active owners and their inputs demonstrate it.
 
-## A static base pose starves everything downstream
+Route modifications through supported graph inputs, animation APIs or the
+project's verified adapter. Direct writes to evaluated pose buffers require
+proven ownership, evaluation timing and synchronization; a persistent-looking
+write in one frame is not a reliable animation integration.
 
-Physics-driven secondary motion, spring-bone or soft-tissue chains, only reacts to upstream animation motion; it has no independent drive of its own. Swapping in a static pose instead of a live idle animation silently kills all downstream secondary motion, along with breathing and natural limb sway, because there's no upstream signal left for it to react to. When downstream physics "isn't working," check whether the upstream animation driver is actually moving before assuming the physics system itself is broken.
+Blend-space sample replacement mutates a shared asset and may affect other
+characters. Prefer scoped playback where available. If the project deliberately
+uses shared replacement, capture originals by asset identity, check skeleton and
+additive compatibility, and restore through the lifecycle contract in
+[CRASH-SAFETY.md](CRASH-SAFETY.md).
 
-## Spring-bone chains are a mass-spring-damper family
+## Diagnose physics by implementation
 
-A built-in spring-bone node and most third-party secondary-motion plugins solve the same mass-spring-damper system, so reason about either one with the same three numbers: stiffness `k`, damping `c`, and the damping ratio they derive, `ζ = c / (2·sqrt(k))`. If a character has no physics asset at all, confirmed by the physics-asset accessor returning nil, any "rigid body impulse" style API is a guaranteed no-op on it; that class of technique can be ruled out immediately, in favour of driving the spring-bone node's own tunable fields (max displacement, stiffness, damping) directly, or building an independent spring-damper simulation when the built-in node's evaluation budget can't cover the needed set of bones.
+Identify the real solver and units before interpreting parameters. SpringBone,
+AnimDynamics, KawaiiPhysics, rigid bodies, cloth and custom Control Rig programs
+are not interchangeable. Similar parameter names do not prove compatible values.
+A physical mass-spring-damper model is useful only if the implementation follows
+it; stiffness/damping sliders may be normalized or use a different integration.
 
-## Enumerate morph target names, don't read the raw array
+Check incoming animation, parent/component motion, gravity, external forces,
+collision, timestep/substeps, reset behavior and displacement limits. A static
+base pose removes one source of excitation, but gravity, wind or other forces
+can still move a simulated region. Absence of a component physics asset does
+not establish absence of all secondary-motion systems.
 
-Reading a morph-target array directly, rather than through the framework's enumeration API, is a known crash risk. Enumerate the available names first, then drive expression by calling the standard "set value by name" function with the name obtained that way.
+For presets, verify the UI value, saved value, public input and actual active rig
+value. Check restoration after animation replacement, mesh swaps and world
+transitions. Reuse an accepted older response as a measured comparison, then
+change only the demonstrated cause. Keep runtime control propagation distinct
+from the solver's actual motion limits.
 
-## Procedural motion design principles
+## Cloth and dynamic body fit
 
-- Let phase lag between primary and secondary motion emerge from the spring-damper's own dynamics rather than hand-authoring a fixed offset per bone; an authored offset reads as mechanical where an emergent one doesn't.
-- Ramp frequency and amplitude on separate curves and never couple them (frequency ramping early, amplitude ramping late is a reasonable default), so the motion doesn't read as a metronome.
-- Add small per-cycle randomisation to timing and easing so repeated cycles don't look identical.
+Check simulation topology, skin weights, fixed particles, render-to-simulation
+mapping, collision bodies, backstops, self-collision and body-shape deformation.
+Cloth and rigidly skinned garments need different fitting checks. Compare the
+same captured animated pose when isolating a constraint; report variation between
+runs instead of treating a noisy pass as a reliable repair.
+
+Disabling collision can identify a conflict without being a shippable fix.
+Check both stretch and penetration, including the actual visible garment.
+Preserve accepted body proportions, geometry, UVs and material assignments unless
+the task calls for changing them. Evaluate neutral fit, supported body controls
+and moving poses before accepting a replacement.
+
+## Facial motion and acceptance
+
+Discover morph names and graph/curve bindings using a verified reader or reflected
+API. Validate object lifetime and container layout before reading raw arrays.
+Test eyes and facial motion alongside body playback, interruption and restoration.
+
+Keep the scope of evidence explicit: an offline transform or strain check is not
+visual acceptance. Review the garment in the editor and target game at useful
+viewing scale, including any supported doubles/alternate appearances. Keep
+unrelated source assets and already accepted behaviors intact.

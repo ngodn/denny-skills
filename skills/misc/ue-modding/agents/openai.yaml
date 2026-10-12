@@ -1,3 +1,3 @@
 interface:
   display_name: "UE Modding"
-  short_description: "Unreal Engine modding and RE"
+  short_description: "UE extraction, Blender authoring, cooking and runtime mods"

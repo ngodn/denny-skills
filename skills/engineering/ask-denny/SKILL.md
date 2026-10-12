@@ -84,6 +84,8 @@ Two disciplines for not fooling yourself, and one for not fooling yourself twice
 
 Model-invoked knowledge bases for tools this team works in daily. Each one is a pile of facts that cost someone a day to learn once. Reach for them before writing integration code, not after it fails.
 
+- **[`/ue-modding`](../../misc/ue-modding/SKILL.md)**: set up a game's extraction and authoring tools, preserve patched CUE4Parse support, fit assets in Blender, cook/package with a compatible Unreal toolchain, or investigate UE4SS runtime behavior. Establish the available tools before assuming the editor or source is unavailable.
+
 - **`/device42`**: discovery and querying: which protocols pre-check reachability and which run to full timeout, port and privilege requirements, the SNMP traps that look like something else, and DOQL's quirks.
 - **`/jsm-assets`**: Jira Service Management Assets as a data platform: the hard limits that change a schema's cost, the AQL and REST gotchas, and the visibility model the documentation gets wrong.
 - **`/forge-apps`**: building a Forge app that does real work: the runtime limits, why anything async has no user context and what that forces, storage that is not the key-value store, and the impersonation nuance the docs appear to rule out.

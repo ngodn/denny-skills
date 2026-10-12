@@ -1,51 +1,49 @@
-Runtime reflection probing for [ue-modding](SKILL.md): how to establish, safely and incrementally, what a shipped Unreal Engine build actually does at runtime versus what static analysis merely suggests it might do.
+# Runtime probing
 
-## Static analysis is a hypothesis, not a fact
+Use this branch of [ue-modding](SKILL.md) when runtime evidence is needed. Start
+with offline assets, source and existing dumps when they can answer the question.
 
-`strings` on the shipping executable, plus statically extracted DataTables, gives every *name* that exists in the cooked build: class names, enum values, table fields. It never tells you which of those names are reachable from reflection at runtime, or whether the logic behind a name still does anything in a stripped shipping build. Treat every static conclusion as something a live probe still has to confirm; both "this has no gameplay logic" and "this is the right signal to hook" are the kind of conclusion that has been wrong until measured.
+## Discover signatures before calls
 
-## Build numbered, incremental probes
+Strings and extracted assets can identify candidate names, not their runtime
+availability or behavior. Use the installed framework's reflection metadata,
+matching SDK, source or verified disassembly to establish the class, signature,
+parameter types and execution context.
 
-Rather than one large script, build a numbered sequence of probes where each one's header states what the previous probe established and what this one specifically tests. Record every negative result as load-bearing, a "do not retry" entry, not something you let fall out of memory between sessions. This is the core method that keeps a reverse-engineering effort spanning many sessions from re-litigating the same dead end twice.
+Do not invoke an unknown function with dummy arguments to discover its arity.
+An assumed marshalling failure is not a safe execution barrier. Validate binding
+behavior in a controlled fixture if metadata is incomplete. String-to-FName
+conversion, array handling and parameter validation depend on the binding version;
+follow its actual API rather than assuming every mismatch either errors or crashes.
 
-## Budget reflection work per frame
+Keep class and owner context attached to names in a dump. Resolve the current
+world, controller, pawn and mesh before attributing measurements to the player;
+startup or preview actors can be different objects.
 
-Doing a full class, property, or function dump inside a single game-thread call can freeze the game outright. The tell that it's specifically the game thread hanging, not the whole process: audio keeps playing while the game or render thread is stuck. Fix: spread the dump across ticks under a fixed wall-clock budget per tick (a few milliseconds), batch log writes rather than flushing per entry, and drop redundant global sweeps once static analysis has already given you the names to look for.
+## Make each probe answer one question
 
-## Object-array scans are full scans
+State the hypothesis, inputs, observation and stopping condition. Prefer read-only
+captures where sufficient. For mutations, record the original state and verify
+restoration. Reuse existing diagnostics instead of growing one-use probes without
+closing the earlier question. Keep negative results with their tested version and
+scope so a later session neither repeats nor overgeneralizes them.
 
-Enumeration calls that find "every live object of class X" walk the entire live object table. Calling one every tick, or every probe iteration, can hang a real session, especially once many assets are loaded. Resolve the target object once, cache it, and refresh on a slow timer (every second or two) or only when the cached handle goes invalid. Never call a full-scan enumeration in a per-tick or per-poll hot path; this exact mistake tends to recur in both a probe script and a shipped mod's own polling code, and the fix is identical both times.
+Bound scans, output and per-frame work. Global object searches may traverse large
+tables; inspect the framework implementation and measure their cost before putting
+them in a hot path. Cache validated identities with lifecycle invalidation rather
+than scanning everything or retaining raw addresses indefinitely.
 
-## Record which class chain each name came from
+## Verify the observation
 
-A reflection dump that spans multiple related classes (an actor and a separate controller object driving it, for instance) must keep the class-chain context attached to each discovered name. Flattening the list, sorting and deduplicating names across chains, loses that context and can send a later search down the wrong chain entirely, costing a full probe generation before the mistake is caught.
+Record process/build identity, object identity, current appearance and relevant
+state. Check that the instrument responds to known cases and use a negative
+control when a false success is plausible. A call returning without error proves
+only that it returned; read back the affected state and inspect the visible
+result where relevant. A failure in one hook or RPC category does not establish
+failure of other mechanisms.
 
-## The startup player object may be a placeholder
-
-An object resolved once at process or level start under a name like "the player" can latch onto a lobby or title-screen stand-in actor and never get re-resolved once the real gameplay level loads, silently describing the wrong object for the rest of the session. Either wait for an explicit level-loaded signal before resolving it, or avoid depending on a cached reference across a level transition at all.
-
-## The arity oracle
-
-When a function's parameter count can't be read directly (property enumeration doesn't always work on function objects themselves), call it via reflection with a deliberately implausible number of dummy arguments, large enough that no real function in the game could plausibly match that arity. Argument marshalling happens before the call actually executes, so the framework reports the true expected parameter count in its own "expected N, received M" error, and the call never fires. Using a *plausible* dummy count instead risks accidentally matching a real function's arity and executing it with garbage-typed arguments, which can crash the game.
-
-## Arguments are marshalled without type checking
-
-Getting the argument count right via the arity oracle is necessary but not sufficient. The right count with wrong argument types does not error; it corrupts memory. Get the types right from a real signature, an SDK header dump, not guesswork, before calling anything with side effects.
-
-## Write and flush before a risky call
-
-If a reflected call crashes the process, an unflushed log line gives you nothing to diagnose from afterward. Write and flush the identifying context, "about to call function X with arguments Y", immediately before making any reflected call that might crash, not after the call returns.
-
-## A call that doesn't throw proves nothing
-
-Framework-level "call accepted" (no exception) says nothing about whether a stateful, game-visible effect actually happened. The reliable test is self-verifying: perform the state-changing call, then independently read back a property the call should have affected, rather than trusting the absence of an error or a human watching the screen.
-
-## Validate the measuring instrument itself
-
-Several classes of lost work trace back to a broken *reading*, not a broken effect: a position reading stuck at exactly zero, a query whose control case itself silently failed, a check that was circular by construction. Every verification needs a negative control, a case expected to fail, and if the control doesn't fail as expected, the whole measurement is suspect, not just the positive result.
-
-## Don't generalise a negative result across categories
-
-A finding that one specific mechanism doesn't fire (network-replicated RPCs in an offline session, for example) does not extend to a related-but-distinct mechanism (plain native function hooks, which can fire fine offline). Test each category on its own terms; an over-generalised negative result can redirect hours of work down the wrong path.
-
-See [NATIVE-HOOKING.md](NATIVE-HOOKING.md) for what to do once a reflection-based hook's cost becomes the bottleneck, and [CRASH-SAFETY.md](CRASH-SAFETY.md) for the rules that keep a probe from crashing the game outright.
+For crash investigation, flush a small identifying record before the risky step
+and retain the crash data. Script exception handling does not catch every native
+memory fault. See [CRASH-SAFETY.md](CRASH-SAFETY.md) for lifetime and teardown,
+and [NATIVE-HOOKING.md](NATIVE-HOOKING.md) if supported extension points cannot
+meet the demonstrated requirement.
