@@ -12,13 +12,14 @@ You invoke this by typing `/ask-denny`. The agent won't reach for it on its own.
 | --- | --- |
 | An idea, and no idea where to start | The head of the main flow, and whether the build is small enough to skip the spec |
 | Bugs and requests arriving from other people | The [triage](../engineering/triage.md) on-ramp, and why tickets you generated yourself don't belong on it |
+| Unreal mod testing while you work in another window | The [UE modding skill](../../skills/misc/ue-modding/SKILL.md), including input addressed to the game window and native screenshots |
 | Two skills that look interchangeable | The line between them, and it is usually one concrete test rather than a matter of taste. [grill-me](../productivity/grill-me.md) or [grill-with-docs](../engineering/grill-with-docs.md) turns on whether you are in a working directory; [grill-with-docs](../engineering/grill-with-docs.md) or [wayfinder](../engineering/wayfinder.md) turns on whether the effort fits one session |
 | A long session and a decision about the context | The ordered tree over the five options at a phase boundary |
 | A skill you have already picked | Nothing useful. Invoke that skill directly. |
 
 ## Prerequisites
 
-The router names skills; it does not install them. Everything it points at has to be installed for the recommendation to be actionable, and it only knows the promoted skills in this repo.
+The router names skills; it does not install them. Everything it points at has to be installed for the recommendation to be actionable. Its explicit routes include the promoted skills and selected references such as UE modding.
 
 The tracker-dependent routes (triage, `to-spec`, `to-tickets`, `implement`) assume [setup-denny-skills](../engineering/setup-denny-skills.md) has already configured an issue tracker in the repo. The router will happily recommend them before that has happened.
 

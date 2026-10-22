@@ -35,6 +35,10 @@ than scanning everything or retaining raw addresses indefinitely.
 
 ## Verify the observation
 
+For keyboard/mouse probes and screenshots, use [GAME-CONTROL.md](GAME-CONTROL.md).
+Verify input reception and the resulting gameplay state separately; a successful
+input command alone does not establish a successful action.
+
 Record process/build identity, object identity, current appearance and relevant
 state. Check that the instrument responds to known cases and use a negative
 control when a false success is plausible. A call returning without error proves
