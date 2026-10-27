@@ -101,6 +101,15 @@ An asset-only cooker that preserves existing cooked materials has a narrower
 capability than a full material/shader cook. Inspect receipts and outputs to tell
 which path ran. Scope cook workarounds to the reproduced failure.
 
+Containerised cooks (Wine under rootless Docker) see only what the daemon's own
+mount namespace shows; a rootless daemon that keeps its state at `/mnt` hides
+every host path under `/mnt`. Bind sources from paths the daemon can see, and
+read the container's bind errors before suspecting the cook.
+
+When recooking assets that already shipped, compare against the released
+cooked bytes, not only decoded data: some packages match only in the release's
+serialization mode (tagged versus unversioned properties).
+
 ## Package and verify
 
 Use a packer/converter verified for the target container revision. Check mount
@@ -118,7 +127,40 @@ intended payload changes and verify preservation of accepted dependencies.
 Where the format allows it, unchanged roundtrips catch writer/converter defects.
 Verify shader data when adding materials, and cooked bindings when adding cloth.
 
+Trim shipped containers to what something reaches. Walk cooked package imports
+(plus conservative name-map paths) from every runtime root: the catalog or
+data tables, meshes, blueprints, rigs, physics, and any external manifest that
+names assets. Remove the unreached set, repack the rest unchanged, and gate on
+byte-identical kept packages and zero references into the removed set. Old
+trial meshes left in a cook directory are the usual dead weight.
+
+To move assets to new paths, rename them in a private editor project trimmed
+to the selected graph (fix redirectors, resave, reload in a fresh process),
+recook only what must be recooked, and relocate cooked material/texture headers
+with a format-aware writer that keeps the payload bytes. Prove decoded parity
+with the original (geometry, morphs, cloth, rig streams, shader maps) after
+applying the inverse path map; whole-container byte identity cannot survive a
+rename.
+
 Install the concrete candidate through the project's established process, then
 check the game behaviors affected by the change. Record authored, cooked,
 packaged, installed and user-accepted states separately. Neither a Blender
 preview nor a successful cook closes the runtime checks.
+
+## Shared shader maps across game patches
+
+A material instance whose parent is a game material and which has its own static
+permutation carries a shader map that references the game's shared shader
+libraries by hash. A game patch can drop those hashes; the material then draws
+with the default (gray) material. Audit every shipped material against the
+installed game's libraries before release, including both target shader models.
+
+A runtime fallback that survives game patches: create a dynamic instance of a
+game material with the identical static permutation (the donor), then call
+`K2_CopyMaterialInstanceParameters(Source, bQuickParametersOnly=true)`. In UE
+5.6 that merges every scalar, vector and texture value along the source's whole
+parent chain (`CopyMaterialUniformParametersInternal`), so only the static
+switches and shaders come from the donor. Guard it by comparing `Parent`,
+`BasePropertyOverrides`, `StaticParametersRuntime` and the permutation flag with
+`FProperty::Identical_InContainer` on the player's own build.
+

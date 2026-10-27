@@ -69,6 +69,16 @@ Preserve accepted body proportions, geometry, UVs and material assignments unles
 the task calls for changing them. Evaluate neutral fit, supported body controls
 and moving poses before accepting a replacement.
 
+## Body shape morphs
+
+Sliders read natural when their deltas come from artist sculpts transferred onto
+the target body (non-rigid fit, barycentric binding), and boxy when they come
+from procedural growth or inflation. Learn a character's proportions by measuring
+game meshes, and keep the measurement separate from the shipped geometry.
+Combine distinct sculpted morphs at their authored weight rather than pushing one
+past it; a range beyond 1 is cleaner as extra stage morphs driven from the slider.
+Review every candidate visually in the target game before calling it done.
+
 ## Facial motion and acceptance
 
 Discover morph names and graph/curve bindings using a verified reader or reflected

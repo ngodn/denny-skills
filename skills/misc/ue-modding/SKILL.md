@@ -41,9 +41,11 @@ Ask only for genuinely unavailable inputs or human-only access steps.
 
 For setup, extraction, Blender, editor and packaging work, read
 [TOOLCHAIN.md](TOOLCHAIN.md). It includes how to preserve a patched CUE4Parse
-checkout and distinguish editor support from target-platform cooking support.
+checkout, distinguish editor support from target-platform cooking support,
+trim and relocate cooked packages, and keep materials drawing after a game patch
+(gray materials).
 
-For character fitting, retargeting, facial playback or secondary motion, read
+For character fitting, body shape sliders, retargeting, facial playback or secondary motion, read
 [ANIMATION.md](ANIMATION.md). Extracted geometry, authored behavior, cooked data
 and game appearance are separate verification stages.
 
