@@ -50,6 +50,31 @@ documents window targeting and its SendEvent caveats. Mouse events use the
 current pointer coordinates, so a gameplay binding that works in the background
 does not prove that coordinate-sensitive UI clicks will work the same way.
 
+## Driving the game's UI through the bridge
+
+When synthetic key events are not available or not reliable, drive a menu through the game's own
+reflected entry points, which is also what a player's key press runs:
+
+- An Enhanced Input binding runs a component function named `InpActEvt_<action>_K2Node_...`. Call
+  it with a default `ActionValue` (`{}`), zero times and no source action. Find it by its stable
+  prefix; the K2Node number changes between builds.
+- A menu page's input listener runs a bound event (`BndEvt__..._OnInputTriggered`) with an input
+  enum; send Down, Down, Confirm to it to exercise a row exactly as the keyboard and pad do. Read
+  the enum asset's `DisplayNameMap` for the values.
+- Open and close a mode with its player-facing actions. A function named for developer or debug
+  controls can leave the UI half torn down.
+- Screenshots taken during a transition show two panels or a half-scaled one; wait for the
+  transition, or confirm with a second capture, before calling a layout broken.
+- Add mod-side dev operations (open this page, press this key on the selected row) when the game
+  offers no callable route. They make every UI check repeatable without the user clicking.
+
+## Test on fresh data
+
+A test that depends on saved state (a recorded route, a saved camera, a selected item) uses state
+made in the test spot during this session. A route or framing saved somewhere else makes the test
+fail for reasons unrelated to the change. Record it yourself first (a scripted move with the game's
+walk gait, a framing from the current camera), then run the test.
+
 ## Screenshots
 
 Prefer the engine's native screenshot command through an already verified

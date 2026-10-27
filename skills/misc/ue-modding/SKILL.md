@@ -1,6 +1,6 @@
 ---
 name: ue-modding
-description: Set up and use Unreal Engine modding toolchains, including CUE4Parse extraction and patches, Blender asset authoring, compatible Unreal editors and cooking, pak/IoStore packaging, and UE4SS Lua/C++ runtime mods. Use for shipped-game asset replacement, character ports, animation/physics work, runtime investigation, and gameplay testing or screenshots without taking desktop focus.
+description: Set up and use Unreal Engine modding toolchains, including CUE4Parse extraction and patches, Blender asset authoring, compatible Unreal editors and cooking, pak/IoStore packaging, and UE4SS Lua/C++ runtime mods. Use for shipped-game asset replacement, character ports, animation/physics work, runtime investigation, extending the game's own menus, and gameplay testing or screenshots without taking desktop focus.
 ---
 
 # UE Modding
@@ -54,9 +54,13 @@ For live reflection, read [RUNTIME-PROBING.md](RUNTIME-PROBING.md) and
 when a native hook is actually needed. Lua and Blueprint are valid production
 choices; choose C++ for demonstrated requirements, not a blanket language rule.
 
-For live gameplay input or screenshots while the user works in another window,
-read [GAME-CONTROL.md](GAME-CONTROL.md). Prefer verified input addressed to the
-game window and native game captures before taking desktop focus.
+For adding rows, tabs or pages to the game's own menus so they read as native,
+read [GAME-UI.md](GAME-UI.md).
+
+For live gameplay input, driving menus through the bridge, or screenshots while
+the user works in another window, read [GAME-CONTROL.md](GAME-CONTROL.md).
+Prefer verified input addressed to the game window and native game captures
+before taking desktop focus.
 
 ## Reload and installation are mechanism-specific
 
