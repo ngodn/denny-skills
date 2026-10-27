@@ -1,5 +1,28 @@
 # denny-skills
 
+## 1.0.2
+
+### Patch Changes
+
+- [`5432c26`](https://github.com/ngodn/denny-skills/commit/5432c26d328c8937a87d95d9a972b375074929ea) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to try verified game-window input and native screenshots before
+  taking desktop focus. Document process/window validation, targeted input cleanup,
+  gameplay readback, refill-cheat interference and weapon readiness checks.
+
+- [`6a88937`](https://github.com/ngodn/denny-skills/commit/6a889378771964b3cb5c58f2378c6fa6e7652206) Thanks [@ngodn](https://github.com/ngodn)! - Revise `ue-modding` around verified game-specific toolchains. Add CUE4Parse patch
+  preservation, Blender authoring, compatible Unreal editors, target-platform
+  cooking and package readback. Replace unsupported blanket claims about missing
+  editor/source access, hot reload, hook costs, reflection calls and secondary
+  physics with scoped checks and primary-source references.
+
+- [`eff008f`](https://github.com/ngodn/denny-skills/commit/eff008f2843e2c793bad8e0b5bd50cdbe1a2aac0) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to diagnose a fitted body that trembles, stretches or appears to flip a knee during
+  one gait: verify the gait, measure chain lengths, isolate the pose writer one owner at a time, check
+  Control Rig and PBIK initialisation in UE 5.6.1, and verify ornament and hit-shape contact separately.
+
+- [`9560530`](https://github.com/ngodn/denny-skills/commit/95605305199152382a330604893f5f899c2ee831) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to trim shipped containers by import closure, move cooked assets to new paths
+  with decoded parity checks, keep materials drawing after a game patch drops shared shaders (audit
+  plus a same-permutation donor fallback), avoid the rootless Docker `/mnt` blind spot in containerised
+  cooks, and build body shape sliders from transferred artist sculpts.
+
 ## 1.0.1
 
 The first release of this fork. Version numbering restarts here: it is not a
