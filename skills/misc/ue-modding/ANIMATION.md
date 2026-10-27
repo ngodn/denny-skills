@@ -19,6 +19,10 @@ authored output and runtime output to locate the first divergence.
 
 ## Find the owner of each motion
 
+For gait-specific trembling, changing limb lengths or a knee that appears to
+flip, read [LOCOMOTION-DIAGNOSIS.md](LOCOMOTION-DIAGNOSIS.md). It covers gait
+verification, solver initialization, control recordings and ornament clearance.
+
 Inspect the main AnimBP, linked layers, post-process graph, Control Rig, physics
 asset, cloth and any runtime override. Track which one evaluates and which one
 writes each affected region. Apparent doubled motion is a hypothesis until the
