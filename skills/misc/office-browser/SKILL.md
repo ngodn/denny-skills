@@ -12,15 +12,17 @@ Which profile to work in is a machine fact, not in this skill: read the "Office 
 ## Start of the job
 
 1. **Check the pieces.** Chrome Stable is running (`pgrep -f /opt/google/chrome/chrome`), remote debugging is on (`~/.config/google-chrome/DevToolsActivePort` exists; the setting survives Chrome restarts, so if it is missing ask the user to open `chrome://inspect/#remote-debugging` and turn it on), and your tool list has `chrome-office` tools. Without them, see Setup below.
-2. **Ask first.** Before any other browser step, tell the user Chrome is about to ask to allow a debugging connection, and wait for them to be ready (AskUserQuestion: "Ready, I'll click Allow" / "Not now").
+2. **Ask first.** Before any other browser step, tell the user Chrome is about to ask to allow a debugging connection, and wait for them to be ready (AskUserQuestion: "Ready, I'll click Allow" / "Not now"). The dialog raises Chrome, and on a window manager that focuses activated windows it pulls the user over once; that is why it happens now and not mid-task.
 3. **Connect right away.** Call `list_pages` as the first browser call, while the user is watching for the dialog. The job's connection exists once it returns.
-4. **Find or open the work tab.** Open pages in the office profile with `google-chrome-stable --profile-directory="<profile dir>" "<url>"`: it opens a tab in the running Chrome without a new connection. Then `list_pages` and `select_page` it. With an office-profile tab selected, `new_page` also opens in that profile.
-5. **Confirm the account** on the page (`take_snapshot` shows the signed-in email) before reading or changing anything.
+4. **Find an office-profile tab.** For candidate pages, `select_page` (never with `bringToFront`) and check `document.title` or a snapshot for the office account. If the office profile has no tab open at all, open one now, while the user is still at Chrome: `google-chrome-stable --profile-directory="<profile dir>" "<url>"`. This activates the Chrome window, so never do it later in the job.
+5. **Open work tabs in the background.** With the office tab selected, `new_page` with `background: true` opens a tab in that same profile without switching the user's view. It is fully usable: clicks, typing, snapshots and screenshots all work while it stays in the background.
+6. **Confirm the account** on the page (`take_snapshot` shows the signed-in email) before reading or changing anything.
 
 ## During the job
 
 - **Every browser step goes through `chrome-office`.** A Playwright script, `connectOverCDP`, `curl` against port 9222, or a second MCP server each opens a new connection and makes Chrome ask again. Never restart the MCP server mid-job.
 - **One connection per agent job, never shared.** Agents sharing a connection would act on the same tabs and selected page and clash. A subagent or another session starts its own `chrome-office` server and its own prompt, so keep browser steps in this session and hand results over.
+- **Stay out of the user's way.** The browser tools act inside the page through the debugging protocol, so the user's real mouse, keyboard and focus are untouched. Keep it that way: `new_page` always with `background: true`, `select_page` never with `bringToFront`, and never the desktop-control skill (real mouse) for browser work.
 - **Leave the user's tabs alone.** Read them if needed; do the work in tabs you opened, and close only those (`close_page`).
 - **Writes are the user's call.** Submitting a form, sending a message, changing a ticket, approving anything: show what you will do and get a yes first.
 - Chrome shows a "controlled by automated test software" bar while connected; that is expected.

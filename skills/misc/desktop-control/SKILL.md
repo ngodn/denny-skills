@@ -13,6 +13,8 @@ Three pieces, none of which need installing beyond what Hyprland setups usually 
 
 Run the scripts in place with `python3 -I` / `bash`; they take paths and coordinates as arguments.
 
+For work inside Google Chrome, call the Skill tool with "office-browser" instead: it acts inside the page without touching the user's mouse or focus.
+
 ## Before touching anything
 
 1. Confirm the tools: `command -v grim hyprctl wtype`, and that `/dev/uinput` is writable by this user (`getfacl /dev/uinput`). With no write access, the clicker fails; tell the user rather than reaching for root.
