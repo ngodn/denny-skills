@@ -23,7 +23,7 @@ Which profile to work in is a machine fact, not in this skill: read the "Office 
 - **Every browser step goes through `chrome-office`.** A Playwright script, `connectOverCDP`, `curl` against port 9222, or a second MCP server each opens a new connection and makes Chrome ask again. Never restart the MCP server mid-job.
 - **One connection per agent job, never shared.** Agents sharing a connection would act on the same tabs and selected page and clash. A subagent or another session starts its own `chrome-office` server and its own prompt, so keep browser steps in this session and hand results over.
 - **Stay out of the user's way.** The browser tools act inside the page through the debugging protocol, so the user's real mouse, keyboard and focus are untouched. Keep it that way: `new_page` always with `background: true`, `select_page` never with `bringToFront`, and never the desktop-control skill (real mouse) for browser work.
-- **Leave the user's tabs alone.** Read them if needed; do the work in tabs you opened, and close only those (`close_page`).
+- **Leave the user's tabs alone.** Read them if needed, but never `navigate_page`, click, type or fill in a tab you didn't open with `new_page`; the user may be looking at it. Do the work in your own tabs and close only those (`close_page`).
 - **Writes are the user's call.** Submitting a form, sending a message, changing a ticket, approving anything: show what you will do and get a yes first.
 - Chrome shows a "controlled by automated test software" bar while connected; that is expected.
 - If the connection drops (Chrome restarted, the user clicked Deny, the session restarted), say so and repeat steps 2 and 3. Don't retry silently, since each retry is another prompt.
