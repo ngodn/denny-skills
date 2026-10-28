@@ -97,6 +97,7 @@ For a session that leads or works beside other agents: Claude Code sessions, Cod
 
 - **[`/agent-comms`](../../misc/agent-comms/SKILL.md)**: message a peer session, launch and watch a Claude, Codex or Antigravity lane on a chosen model and effort, relay any agent into Claude, and settle who owns a shared game, editor or GPU.
 - **[`/agent-lanes`](../../misc/agent-lanes/SKILL.md)**: how to brief, budget, correct and stop a lane so the main task never stalls.
+- **[`/office-browser`](../../misc/office-browser/SKILL.md)**: office web work in the user's signed-in Chrome profile, with one debugging approval per job.
 - **[`/desktop-control`](../../misc/desktop-control/SKILL.md)**: see and click the real Hyprland desktop from a shell, including answering a question box in another session's IDE panel.
 
 ## Phase boundaries

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Office Browser"
+  short_description: "Use the signed-in Chrome profile with one debugging approval"
