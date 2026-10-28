@@ -1,10 +1,39 @@
 """Watch live Claude Code sessions and print one line per event worth reporting: a question waiting
 on the user, a turn ending (with its last message), a session appearing or exiting. Lines are
 labelled with the chat title the user sees on the tab. Run under the Monitor tool.
-Usage: watch_sessions.py [cwd]   only sessions whose working directory is cwd (default: all others)"""
+Usage: watch_sessions.py [cwd] [--stall-minutes N]
+  cwd               only sessions whose working directory is cwd (default: all others)
+  --stall-minutes N also print a STALL line when a session has been idle N minutes with no
+                    work process running under it (it said "I'll do X later" and nothing is
+                    scheduled). Flags once per idle stretch."""
 import glob, json, os, subprocess, sys, time
 SESS = os.path.expanduser("~/.claude/sessions")
-CWD = os.path.abspath(os.path.expanduser(sys.argv[1])) if len(sys.argv) > 1 else None
+_args = [a for a in sys.argv[1:]]
+STALL = None
+if "--stall-minutes" in _args:
+    i = _args.index("--stall-minutes"); STALL = float(_args[i + 1]) * 60; del _args[i:i + 2]
+CWD = os.path.abspath(os.path.expanduser(_args[0])) if _args else None
+# Long-lived helpers every session has; they are not "work".
+IDLE_HELPERS = ("mcp-for-blender", "chrome-devtools-mcp", "rea-agents", "mcp", "uv tool", "npm exec", "npx")
+
+def busy_descendants(pid):
+    """Work processes under a session: anything in its tree except its standing MCP helpers."""
+    kids, todo = [], [pid]
+    while todo:
+        p = todo.pop()
+        try:
+            children = open(f"/proc/{p}/task/{p}/children").read().split()
+        except Exception:
+            continue
+        for c in children:
+            todo.append(int(c))
+            try:
+                cmd = open(f"/proc/{c}/cmdline").read().replace("\0", " ")
+            except Exception:
+                continue
+            if cmd and not any(h in cmd for h in IDLE_HELPERS):
+                kids.append(cmd[:80])
+    return kids
 
 def own_session_pid():
     # The Claude process that launched this watcher, so it never reports on itself.
@@ -74,6 +103,13 @@ def scan():
             s["file"], s["pos"] = tr, 0
         read_new(s)
         new = d.get("status")
+        if STALL and new == "idle":
+            s.setdefault("idle_since", time.time())
+            if not s.get("stall_flagged") and time.time() - s["idle_since"] > STALL and not busy_descendants(pid):
+                s["stall_flagged"] = True
+                say(f"[{label(s)}] STALL? idle {int((time.time()-s['idle_since'])/60)} min with nothing running. Last said: {clip(s['last_text'], 300)}")
+        elif new != "idle":
+            s.pop("idle_since", None); s.pop("stall_flagged", None)
         if new != s["status"]:
             if new == "idle" and s["last_text"]:
                 say(f"[{label(s)}] finished a turn: {clip(s['last_text'])}")
