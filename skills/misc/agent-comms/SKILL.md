@@ -35,7 +35,7 @@ Only Claude has `SendMessage`, so Codex, agy or a script relays through a throwa
 echo "Use the SendMessage tool to send this exact text to the session named <peer>: '<message>'. Reply SENT or the error." | claude -p --model haiku --effort low --dangerously-skip-permissions
 ```
 
-It costs one small model call, so use it for things a peer must act on now. For routine output a lane needs no relay: its lead's watcher already streams its messages.
+It costs one small model call, so use it for things a peer must act on now. The relay is one-way: the throwaway session exits after sending, so a reply to its `from-name` bounces. Answer a lane through its own channel (an addendum in its brief, `codex queue` plus resume, or a file it watches), and tell lanes not to wait for a reply to a relayed message. For routine output a lane needs no relay: its lead's watcher already streams its messages.
 
 ## Lead to a lane (any vendor)
 
