@@ -91,6 +91,14 @@ Model-invoked knowledge bases for tools this team works in daily. Each one is a 
 - **`/forge-apps`**: building a Forge app that does real work: the runtime limits, why anything async has no user context and what that forces, storage that is not the key-value store, and the impersonation nuance the docs appear to rule out.
 - **`/cmdb-sync`**: designing a sync from an external inventory into a CMDB: identity over keys, resumability, relocation, and classify-and-route.
 
+## Other agents on the machine
+
+For a session that leads or works beside other agents: Claude Code sessions, Codex, Antigravity.
+
+- **[`/agent-comms`](../../misc/agent-comms/SKILL.md)**: message a peer session, launch and watch a Claude, Codex or Antigravity lane on a chosen model and effort, relay any agent into Claude, and settle who owns a shared game, editor or GPU.
+- **[`/agent-lanes`](../../misc/agent-lanes/SKILL.md)**: how to brief, budget, correct and stop a lane so the main task never stalls.
+- **[`/desktop-control`](../../misc/desktop-control/SKILL.md)**: see and click the real Hyprland desktop from a shell, including answering a question box in another session's IDE panel.
+
 ## Phase boundaries
 
 A **phase** is a chunk of work inside a session: the grilling, the implementation, the QA. At the **boundary** between two of them you have five options, and picking between them is the fuzziest decision in this whole map:

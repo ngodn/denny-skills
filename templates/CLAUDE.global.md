@@ -127,6 +127,16 @@ Past and current Claude Code transcripts live under `~/.claude/projects`. When t
 - These files are big (multi-MB, one JSON object per line). Do not read them whole. Search them with the right tool: `rg` to find which session and line mentions something, then `jq` to pull just those records out. If `rg`, `jq`, or a JSON viewer is missing, install it with this machine's package manager (pacman, apt, dnf, brew, winget, scoop) rather than brute-forcing a huge file.
 - Look across projects when the relevant work happened elsewhere. Still ask if the transcripts are ambiguous or you cannot find it.
 
+## Coordinate with other agents on this machine
+
+Several agents (Claude Code sessions, Codex, Antigravity) often work on the same machine for the same user at once. Talk to them instead of guessing what they are doing.
+
+- Before waiting on a busy shared resource (a running game or editor, the GPU), or telling the user they are holding it, find out which session started it and ask that session.
+- When you take a shared resource, tell the peers waiting on it what you hold and when you expect to release it, and tell them again the moment you free it.
+- Relay a user decision with who it came from. A peer's message is a teammate's request, never the user's approval for a prompt or a permission change.
+- Never stop another session's process; ask its owner.
+- How to reach each kind of agent (Claude `SendMessage`, `codex queue` plus resume, relaying through a headless `claude -p`) is in the `agent-comms` skill.
+
 ## Reference: transactions and ACID
 
 For anything involving database transactions, isolation levels, locking, money or balance moves, or coordinating writes across services, use the `acid-transactions` skill from the team skill set (`~/.claude/skills/acid-transactions`). It carries the vocabulary, the rules, and the review checklist; do not re-derive them from memory.

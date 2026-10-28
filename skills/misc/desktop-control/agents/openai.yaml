@@ -1,0 +1,3 @@
+interface:
+  display_name: "Desktop Control"
+  short_description: "Screenshot, click, scroll and type on a Hyprland desktop"

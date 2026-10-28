@@ -1,0 +1,3 @@
+interface:
+  display_name: "Agent Lanes"
+  short_description: "Run Codex, Gemini and subagent lanes from a lead session"
