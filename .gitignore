@@ -7,3 +7,4 @@ node_modules
 
 # Installer backups of your own machine's config. Personal, never committed.
 backup/
+__pycache__/

@@ -54,6 +54,13 @@ matter what a lane is doing.
   when it expires. Relay to the user only what changes the plan; a failed `grep`/`rg` that matched
   nothing is noise, so check before reporting it.
 - Before reporting a lane's state, read its latest output.
+- A job that waits for "finished" in a log must count only lines written after it starts (record the line
+  count first) and also check that the process has exited. Logs keep earlier runs' "ALL DONE" lines; a
+  plain `grep` fired a release flag seven hours early and other sessions nearly launched a game on it.
+- Detect a running game by its executable path in the first argv field
+  (`ps -eo args | grep -qE '^[^ ]*Game-Win64-Shipping\.exe'`). The process can rename itself (Mortal
+  Shell II shows as `GameThread`), so `pgrep -x` misses it, and `pgrep -f` also matches shells that only
+  mention the name.
 
 ## Correct or stop a running Codex exec lane
 

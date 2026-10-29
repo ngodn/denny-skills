@@ -7,10 +7,14 @@
 #
 #   vendor  claude | codex | agy
 #   model   a full model id, or a short name:
-#             claude  opus, fable, sonnet (the CLI's own aliases)
+#             claude  opus, fable, sonnet, haiku (the CLI's own aliases)
 #             codex   astra = gpt-6-astra, sol = gpt-6.1-sol
-#             agy     argon = gemini-4-argon, flash = gemini-3.8-flash
-#                     (agy ids carry the effort: gemini-4-argon-high; `agy models` lists them)
+#             agy     argon = gemini-4-argon, flash = gemini-3.8-flash,
+#                     agy-opus = claude-opus-5-5, agy-sonnet = claude-sonnet-5-5,
+#                     gpt-oss = gpt-oss-120b-medium
+#                     (agy ids carry the effort: gemini-4-argon-high; passing both a
+#                     suffixed id and a differing --effort errors, and gpt-oss-120b only
+#                     supports medium)
 #   effort  low | medium | high
 #   id      the session/thread/conversation id from the earlier run's id.txt
 #
@@ -18,6 +22,7 @@
 # stream), stderr.log, pid.txt, exit.txt, id.txt, last-message.md, vendor.txt, model.txt.
 # Prints the run folder first, so a watcher (watch_lane.py) can be pointed at it at once.
 set -u
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENDOR="${1:?vendor}"; MODEL="${2:?model}"; EFFORT="${3:?effort}"
 ROOT="$(cd "${4:?root}" && pwd)"; LANE="${5:?lane}"; shift 5
 case "$EFFORT" in low|medium|high) ;; *) echo "effort must be low, medium or high" >&2; exit 2 ;; esac
@@ -27,7 +32,13 @@ case "$VENDOR" in
   codex)
     case "$MODEL" in astra) MODEL=gpt-6-astra ;; sol) MODEL=gpt-6.1-sol ;; esac ;;
   agy)
-    case "$MODEL" in argon) MODEL=gemini-4-argon ;; flash) MODEL=gemini-3.8-flash ;; esac
+    case "$MODEL" in
+      argon) MODEL=gemini-4-argon ;;
+      flash) MODEL=gemini-3.8-flash ;;
+      agy-opus|opus) MODEL=claude-opus-5-5 ;;
+      agy-sonnet|sonnet) MODEL=claude-sonnet-5-5 ;;
+      gpt-oss|gpt-oss-120b|gpt-oss-120b-*) MODEL=gpt-oss-120b-medium; EFFORT=medium ;;
+    esac
     case "$MODEL" in *-low|*-medium|*-high) ;; *) MODEL="$MODEL-$EFFORT" ;; esac ;;
   *) echo "vendor must be claude, codex or agy" >&2; exit 2 ;;
 esac
@@ -41,7 +52,7 @@ if [ "${1:-}" = "--resume" ]; then
   RESUME="${2:?id}"; shift 2; printf '%s\n' "${*:-continue}" > "$RUN/prompt.md"
 else
   BRIEF="${1:?brief}"; shift
-  { echo "You are the $LANE lane. Your brief is the file $BRIEF. Read it in full first and follow it. The project root is $ROOT. Write your final report to the REPORT.md path the brief names and finish with a short summary of what you did, what you measured, what is open, and what you deleted."
+  { echo "You are the $LANE lane. Your brief is the file $BRIEF. Read it in full first and follow it. The project root is $ROOT. Between steps, check your mailbox with: python3 $SCRIPT_DIR/mail.py read $LANE. Write your final report to the REPORT.md path the brief names and finish with a short summary of what you did, what you measured, what is open, and what you deleted."
     [ -n "${*:-}" ] && printf '\n%s\n' "$*"; } > "$RUN/prompt.md"
 fi
 PROMPT="$(cat "$RUN/prompt.md")"

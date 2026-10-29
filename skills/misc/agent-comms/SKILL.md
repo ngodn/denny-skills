@@ -11,11 +11,31 @@ Every launch runs without approval prompts, since a headless agent cannot answer
 
 | Agent | Headless run | No-prompt flag | Model | Effort | Continue a session |
 | --- | --- | --- | --- | --- | --- |
-| Claude Code | `claude -p` (prompt on stdin) | `--dangerously-skip-permissions` | `--model opus` (Opus 5.5), `fable`, `sonnet`, or a full id | `--effort low\|medium\|high` | `--resume <session-id>` |
+| Claude Code | `claude -p` (prompt on stdin) | `--dangerously-skip-permissions` | `--model opus` (Opus 5.5), `fable`, `sonnet`, `haiku`, or a full id | `--effort low\|medium\|high` | `--resume <session-id>` |
 | Codex | `codex exec -` (prompt on stdin) | `--dangerously-bypass-approvals-and-sandbox` | `-m gpt-6-astra`, `gpt-6.1-sol` | `-c model_reasoning_effort=low\|medium\|high` | `codex exec resume <thread-id> "<msg>"` |
-| Antigravity | `agy -p "<prompt>"` | `--dangerously-skip-permissions` | `--model gemini-4-argon-high`, `gemini-3.8-flash-low`, ... (effort is part of the id) | in the model id | `--conversation <id>` |
+| Antigravity | `agy -p "<prompt>"` | `--dangerously-skip-permissions` | `--model gemini-4-argon-high`, `gemini-3.8-flash-low`, `claude-opus-5-5-high`, `claude-sonnet-5-5-low`, `gpt-oss-120b-medium` | in the model id (or `--effort low\|medium\|high` with a base id) | `--conversation <id>` |
 
-`agy models` lists its ids; it also serves Claude and GPT-OSS models. Give `claude -p` its prompt on stdin: `--add-dir` takes several folders and swallows a trailing prompt argument, and with stdin left open it waits 3 s for input.
+**Harness versus model:** the harness decides the tools, the address, the inbox and the quota bucket; the model decides how well it thinks. Claude Opus 5.5 (`claude-opus-5-5-*`) or Sonnet 5.5 (`claude-sonnet-5-5-*`) running inside `agy` is an `agy` agent with `agy`'s tools and an `agy` conversation id, not Claude Code's `SendMessage` or `Monitor`. It draws on Antigravity's `Claude and GPT models` quota (`3p-weekly`, `3p-5h`), never on the user's Claude Code limit. Address every agent by `harness:id` and treat the model as metadata.
+
+Give `claude -p` its prompt on stdin: `--add-dir` takes several folders and swallows a trailing prompt argument, and with stdin left open it waits 3 s for input. In `agy`, do not pass both a suffixed model id and a differing `--effort` flag (`agy` exits 1 on a conflict); `xhigh` and `max` are unsupported on current `agy` models, and `gpt-oss-120b` only supports `medium`.
+
+## List peers and quotas (all harnesses)
+
+`scripts/list_peers.py [--quota] [--recent N] [--json]` lists every live session across Claude Code (`~/.claude/sessions/*.json`), Codex (`~/.codex/sessions/`), and Antigravity (`~/.gemini/antigravity*/presence/*.lock` plus `conversation_summaries.db`) with its harness, status (`busy`, `idle`, `waiting`), PID, model, id/address, title and `cwd`.
+
+With `--quota`, it also reads remaining quota per harness so a coordinator can route by budget:
+
+- **Antigravity (`agy`):** `agy -p /usage --output-format json` (zero model tokens; reports `gemini-weekly`, `gemini-5h`, `3p-weekly`, `3p-5h`).
+- **Codex (`codex`):** latest `rate_limits.primary` in `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`.
+- **Claude Code (`claude`):** `cachedUsageUtilization.utilization` in `~/.claude.json` (`five_hour`, `seven_day`).
+
+| Job | Harness | Model | Effort | Reason |
+| --- | --- | --- | --- | --- |
+| Lead coordination, architecture, hard judgment | `agy` | `claude-opus-5-5` (`agy-opus`) or `gemini-4-argon` (`argon`) | `high` | Strongest rule adherence and triage on Antigravity's own quota (zero Claude Code spend). |
+| Routine lane work, multi-step coding, reviews | `agy` or `codex` | `claude-sonnet-5-5` (`agy-sonnet`), `gemini-4-argon`, or `gpt-6.1-sol` (`sol`) | `medium` or `high` | Fast, accurate implementation across independent quota pools (`3p-weekly`, `gemini-weekly`, Codex weekly). |
+| Heavy autonomous code/build lane | `codex` | `gpt-6-astra` (`astra`) or `gpt-6.1-sol` (`sol`) | `high` | Deep tool loops on the Codex pro budget. |
+| Polling, log/mailbox summaries, cheap relays | `agy` | `gemini-3.8-flash` (`flash`) | `low` | ~3.5 s per turn and ~0.0015% of `gemini-weekly` per call; `gpt-oss-120b-medium` misjudged GPU priority rules in testing. |
+| Emergency `SendMessage` into unmonitored Claude session | `claude` | `haiku` | `low` | Only when the target Claude session is not watching `~/.agent-mailbox/`; spends Claude Code quota. |
 
 The old `gemini` CLI is retired for individual accounts ("IneligibleTierError ... migrate to Antigravity"); use `agy`. `agy -p` cannot log in by itself. When it waits for an authorization code or says "authentication required", leave agy out and ask the user to run `agy` once in a terminal on their desktop session. A session inside a nested compositor (lwfa) can't reach the stored login at all.
 
@@ -37,9 +57,25 @@ echo "Use the SendMessage tool to send this exact text to the session named <pee
 
 It costs one small model call, so use it for things a peer must act on now. The relay is one-way: the throwaway session exits after sending, so a reply to its `from-name` bounces. Answer a lane through its own channel (an addendum in its brief, `codex queue` plus resume, or a file it watches), and tell lanes not to wait for a reply to a relayed message. For routine output a lane needs no relay: its lead's watcher already streams its messages.
 
+## Antigravity (agy) and the shared mailbox
+
+Every harness can send and receive through the file-based mailbox under `~/.agent-mailbox/<recipient>/`, without spending Claude Code tokens:
+
+- **Send:** `scripts/mail.py send <to> "<text>" [--reply-to <msg-id>] [--deliver]`.  A name that matches no peer and no mailbox prints a warning, since a typo would create a mailbox nobody reads; `watch` claims a name. `<to>` accepts `claude:<peer>`, `codex:<thread-id>`, `agy:<conv-id>`, a bare Claude peer name or tab title, a UUID or 8-char prefix, or a lane/daemon name. `mail.py` auto-detects the caller's harness, session id and model from `/proc` and writes the message atomically (`JSON header + blank line + body`).
+- **Read:** `scripts/mail.py read <me>` prints unread messages and moves them to `read/` (`--keep` leaves them unread). Brief every lane to check `mail.py read <lane>` between steps (`run_lane.sh` adds this automatically).
+- **Watch and wake up:** `scripts/mail.py watch <me> [--once] [--ack]` prints one line per new message.
+  - Under **Claude Code**: run `scripts/mail.py watch <peer-name> --ack` under the `Monitor` tool. Incoming messages from `agy` or Codex wake the Claude session with zero `claude -p` relay tokens.
+  - Under **Antigravity (`agy`)**: a background `run_command` (`WaitMsBeforeAsync: 500`, `IsDaemon: false`) wakes the `agy` session via Reactive Wakeup (`<SYSTEM_MESSAGE>`) the moment the command exits. Run `scripts/mail.py watch <conv-id> --once --ack` in the background; when it wakes you, handle the message and re-arm the watcher before ending the turn.
+- **Deliver (`--deliver` and `scripts/agy_bridge.py`):**
+  - **To a live interactive `agy` session** (`~/.gemini/antigravity*/presence/<id>.lock` held): `agy_bridge.py deliver` leaves the message in `~/.agent-mailbox/<id>/` so the session's `mail.py watch --once` task wakes it. Never run a second `agy -p --conversation <id>` while a live process holds that conversation's lock, or their in-memory SQLite step indices will collide.
+  - **To an idle `agy` conversation on disk:** `agy_bridge.py deliver <id>` resumes it headlessly with `agy -p "<formatted mail>" --conversation <id> --model <model> --dangerously-skip-permissions --output-format json`.
+  - **To a long-lived `agy` inbox daemon:** `scripts/agy_bridge.py daemon start <name> --model gemini-3.8-flash-low --cwd <dir>` keeps `agy -p="" --input-format stream-json --output-format stream-json` alive on a pipe (`feed.jsonl`), running a turn for each `{"event":"user","message":{"content":"..."}}` line that `agy_bridge.py deliver <name>` appends.
+  - **To Codex:** `--deliver` queues the message with `codex queue --thread <id> --message ...` (add `--resume` to also run `codex exec resume <id>`).
+  - **To Claude Code:** default `--deliver` uses the zero-token mailbox; add `--claude-relay` only when an unmonitored Claude session must be interrupted via `SendMessage` (spends one `haiku --effort low` turn and embeds a `mail.py send` return address so replies never bounce).
+
 ## Lead to a lane (any vendor)
 
-`scripts/run_lane.sh <vendor> <model> <effort> <root> <lane> <brief.md>` starts a lane on Claude (`claude`), Codex (`codex`) or Antigravity (`agy`), with every artifact in `<root>/work/agents/<lane>-<stamp>/`: `prompt.md`, the vendor's own `events.jsonl`, `stderr.log`, `pid.txt`, `exit.txt`, and when it ends `id.txt` and `last-message.md`. Short model names work (`opus`, `fable`, `astra`, `sol`, `argon`, `flash`); effort is `low`, `medium` or `high`. `--resume <id> "<msg>"` in place of the brief continues the lane from its `id.txt`. `LANE_ADD_DIRS` adds folders it may touch outside the root.
+`scripts/run_lane.sh <vendor> <model> <effort> <root> <lane> <brief.md>` starts a lane on Claude (`claude`), Codex (`codex`) or Antigravity (`agy`), with every artifact in `<root>/work/agents/<lane>-<stamp>/`: `prompt.md`, the vendor's own `events.jsonl`, `stderr.log`, `pid.txt`, `exit.txt`, and when it ends `id.txt` and `last-message.md`. Short model names work (`opus`, `fable`, `sonnet`, `haiku` on `claude`; `astra`, `sol` on `codex`; `argon`, `flash`, `agy-opus`, `agy-sonnet`, `gpt-oss` on `agy`); effort is `low`, `medium` or `high`. `--resume <id> "<msg>"` in place of the brief continues the lane from its `id.txt`. `LANE_ADD_DIRS` adds folders it may touch outside the root.
 
 Launch it as a tracked background run, read the run folder from its first output line, then start `scripts/watch_lane.py <run dir> <label>` under the Monitor tool. It reads each vendor's stream and prints the lane's messages, real command failures (a search or listing that matched nothing is skipped), a 10-minute heartbeat, a 15-minute stall warning and the exit. For the brief, budget, and when and how to stop a lane, call the Skill tool with "agent-lanes".
 
