@@ -44,7 +44,7 @@ case "$VENDOR" in
 esac
 
 RUN="$ROOT/work/agents/$LANE-$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$RUN"; echo "$RUN"
+mkdir -p "$RUN"; RUN="$(realpath "$RUN")"; echo "$RUN"  # codex -o refuses a path through a symlinked folder
 echo "$VENDOR" > "$RUN/vendor.txt"; echo "$MODEL $EFFORT" > "$RUN/model.txt"
 
 RESUME=""
