@@ -7,8 +7,8 @@
 #
 #   vendor  claude | codex | agy
 #   model   a full model id, or a short name:
-#             claude  opus, fable, sonnet, haiku (the CLI's own aliases)
-#             codex   astra = gpt-6-astra, sol = gpt-6.1-sol
+#             claude  opus (Opus 5.5), fable (Fable 5.2), sonnet, haiku (the CLI's own aliases)
+#             codex   astra = gpt-6.2-astra, sol = gpt-6.2-sol
 #             agy     argon = gemini-4-argon, flash = gemini-3.8-flash,
 #                     agy-opus = claude-opus-5-5, agy-sonnet = claude-sonnet-5-5,
 #                     gpt-oss = gpt-oss-120b-medium
@@ -30,7 +30,7 @@ case "$EFFORT" in low|medium|high) ;; *) echo "effort must be low, medium or hig
 case "$VENDOR" in
   claude) ;;
   codex)
-    case "$MODEL" in astra) MODEL=gpt-6-astra ;; sol) MODEL=gpt-6.1-sol ;; esac ;;
+    case "$MODEL" in astra) MODEL=gpt-6.2-astra ;; sol) MODEL=gpt-6.2-sol ;; esac ;;
   agy)
     case "$MODEL" in
       argon) MODEL=gemini-4-argon ;;

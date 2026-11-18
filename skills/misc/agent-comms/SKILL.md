@@ -11,8 +11,8 @@ Every launch runs without approval prompts, since a headless agent cannot answer
 
 | Agent | Headless run | No-prompt flag | Model | Effort | Continue a session |
 | --- | --- | --- | --- | --- | --- |
-| Claude Code | `claude -p` (prompt on stdin) | `--dangerously-skip-permissions` | `--model opus` (Opus 5.5), `fable`, `sonnet`, `haiku`, or a full id | `--effort low\|medium\|high` | `--resume <session-id>` |
-| Codex | `codex exec -` (prompt on stdin) | `--dangerously-bypass-approvals-and-sandbox` | `-m gpt-6-astra`, `gpt-6.1-sol` | `-c model_reasoning_effort=low\|medium\|high` | `codex exec resume <thread-id> "<msg>"` |
+| Claude Code | `claude -p` (prompt on stdin) | `--dangerously-skip-permissions` | `--model opus` (Opus 5.5), `fable` (Fable 5.2), `sonnet`, `haiku`, or a full id | `--effort low\|medium\|high` | `--resume <session-id>` |
+| Codex | `codex exec -` (prompt on stdin) | `--dangerously-bypass-approvals-and-sandbox` | `-m gpt-6.2-astra`, `gpt-6.2-sol` | `-c model_reasoning_effort=low\|medium\|high` | `codex exec resume <thread-id> "<msg>"` |
 | Antigravity | `agy -p "<prompt>"` | `--dangerously-skip-permissions` | `--model gemini-4-argon-high`, `gemini-3.8-flash-low`, `claude-opus-5-5-high`, `claude-sonnet-5-5-low`, `gpt-oss-120b-medium` | in the model id (or `--effort low\|medium\|high` with a base id) | `--conversation <id>` |
 
 **Harness versus model:** the harness decides the tools, the address, the inbox and the quota bucket; the model decides how well it thinks. Claude Opus 5.5 (`claude-opus-5-5-*`) or Sonnet 5.5 (`claude-sonnet-5-5-*`) running inside `agy` is an `agy` agent with `agy`'s tools and an `agy` conversation id, not Claude Code's `SendMessage` or `Monitor`. It draws on Antigravity's `Claude and GPT models` quota (`3p-weekly`, `3p-5h`), never on the user's Claude Code limit. Address every agent by `harness:id` and treat the model as metadata.
@@ -32,8 +32,8 @@ With `--quota`, it also reads remaining quota per harness so a coordinator can r
 | Job | Harness | Model | Effort | Reason |
 | --- | --- | --- | --- | --- |
 | Lead coordination, architecture, hard judgment | `agy` | `claude-opus-5-5` (`agy-opus`) or `gemini-4-argon` (`argon`) | `high` | Strongest rule adherence and triage on Antigravity's own quota (zero Claude Code spend). |
-| Routine lane work, multi-step coding, reviews | `agy` or `codex` | `claude-sonnet-5-5` (`agy-sonnet`), `gemini-4-argon`, or `gpt-6.1-sol` (`sol`) | `medium` or `high` | Fast, accurate implementation across independent quota pools (`3p-weekly`, `gemini-weekly`, Codex weekly). |
-| Heavy autonomous code/build lane | `codex` | `gpt-6-astra` (`astra`) or `gpt-6.1-sol` (`sol`) | `high` | Deep tool loops on the Codex pro budget. |
+| Routine lane work, multi-step coding, reviews | `agy` or `codex` | `claude-sonnet-5-5` (`agy-sonnet`), `gemini-4-argon`, or `gpt-6.2-sol` (`sol`) | `medium` or `high` | Fast, accurate implementation across independent quota pools (`3p-weekly`, `gemini-weekly`, Codex weekly). |
+| Heavy autonomous code/build lane | `codex` | `gpt-6.2-astra` (`astra`) or `gpt-6.2-sol` (`sol`) | `high` | Deep tool loops on the Codex pro budget. |
 | Polling, log/mailbox summaries, cheap relays | `agy` | `gemini-3.8-flash` (`flash`) | `low` | ~3.5 s per turn and ~0.0015% of `gemini-weekly` per call; `gpt-oss-120b-medium` misjudged GPU priority rules in testing. |
 | Emergency `SendMessage` into unmonitored Claude session | `claude` | `haiku` | `low` | Only when the target Claude session is not watching `~/.agent-mailbox/`; spends Claude Code quota. |
 
