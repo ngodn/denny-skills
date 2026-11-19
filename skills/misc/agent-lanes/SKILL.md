@@ -62,6 +62,26 @@ matter what a lane is doing.
   Shell II shows as `GameThread`), so `pgrep -x` misses it, and `pgrep -f` also matches shells that only
   mention the name.
 
+## Lanes the user can see (Orca)
+
+When the lead runs inside Orca (`ORCA_TERMINAL_HANDLE` is set), a headless lane is invisible to the user, who uses Orca to see all work in one place. Start lanes there with `run_lane.sh --orca` (call the Skill tool with "agent-comms" for the command) unless the lane needs a vendor stream on disk. Every rule in this skill still applies; what changes:
+
+- **Launch:** the command is launcher and watcher in one. Run it as a tracked background run, or under Monitor to get each line as it happens. Exit 0 is the lane's turn ending, exit 3 is a box nobody answered within two minutes.
+- **A new tab in a folder the agent has not been trusted in stops on a trust box** (the home folder asks every session). The watcher prints it; the brief is delivered once it is answered.
+- **Correct:** `--resume <handle> "<correction>"` types into the running lane. The addendum, quiet-moment and kill steps below are for headless lanes only.
+- **Stop:** `orca terminal send --terminal <handle> --interrupt`, or `orca terminal close --terminal <handle>` to end the tab. `pid.txt` holds the watcher, so killing it leaves the lane running.
+- **Show progress where the user looks:** `orca worktree set --worktree active --comment "<state>"` puts one line on the workspace card; update it at each checkpoint.
+- **Want Orca to wake you with the result instead of watching?** That is an Orca worker: call the Skill tool with "orchestration". Its rule against polling covers its own mailbox; this watcher only reads agent state.
+
+## A lane on another machine
+
+When the work belongs on the user's other machine (its GPU is free, the repo or the app lives there), start the lane there with `remote.py lane <host> ...` (call the Skill tool with "agent-comms" for the command and for `<lane>@<host>` mail). Every rule in this skill still applies; what changes:
+
+- **The brief travels, your files do not.** The lane sees only its own machine. Name paths that exist there, or copy inputs first with `remote.py push`, and have it send results back in mail or name files for you to `remote.py pull`.
+- **Check that machine before you launch:** `list_peers.py --host <host>` for who works there, and `remote.py run <host> 'nvidia-smi'` or a game check for what is busy. Its quiet-time and resource owners are separate from this machine's.
+- **Watch** with the command `remote.py lane` prints; it streams over SSH and ends when the lane does. If the link drops, the lane keeps running: run the watch command again.
+- **Correct** with `mail.py send <lane>@<host> "<correction>"` for a lane that checks its mailbox between steps, or `--orca` when it was started with `--orca`. **Stop** with `remote.py run <host> 'kill $(cat <run>/pid.txt)'`.
+
 ## Correct or stop a running Codex exec lane
 
 Exec lanes do not re-read their brief. One may happen to reopen it and pick up an addendum; treat that as

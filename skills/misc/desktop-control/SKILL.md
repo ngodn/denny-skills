@@ -15,6 +15,29 @@ Run the scripts in place with `python3 -I` / `bash`; they take paths and coordin
 
 For work inside Google Chrome, call the Skill tool with "office-browser" instead: it acts inside the page without touching the user's mouse or focus.
 
+## An agent in an Orca terminal needs no pointer
+
+When the box to answer belongs to an agent hosted in Orca (the agent IDE; `orca terminal list` shows it), read and answer it through Orca's CLI. The user's mouse and focus stay untouched, and rule 3 below still holds: every choice is one the user made.
+
+1. **Find it.** `python3 -I <agent-comms skill>/scripts/orca_env.py agents` lists each agent's state and terminal handle; `waiting` or `blocked` means a box is open.
+2. **Read it.** `orca terminal read --terminal <handle> --screen --json`, the rendered rows are in `result.terminal.tail`.
+3. **Answer it.** Keys go as text, Enter separately: a number picks a numbered option (`orca terminal send --terminal <handle> --text 2`), Down is `--text $'\e[B'`, confirm with `orca terminal send --terminal <handle> --enter`. Text plus `--enter` in one command is refused while a box is open (`agent_prompt_blocked`).
+4. **Verify.** Read the screen again: the box is gone and the answer shown is the one chosen.
+
+Checked here on a one-question Claude Code box and on the trust-this-folder menu; a multi-tab question box is not yet exercised this way.
+
+`orca computer` (Orca's own desktop control) is no substitute on Hyprland: it takes no screenshots and sees almost no windows. For anything outside an Orca terminal, including Orca's own window (class `orca`), use the loop below.
+
+## Another machine's desktop
+
+The same loop works on the user's other machine through `remote.py` from the agent-comms skill, which sets the desktop session's variables for the command. `$DC` is this skill's script folder there.
+
+- **See:** `remote.py run <host> 'bash $DC/shot.sh /tmp/shot.png <MONITOR> 0.6'`, then `remote.py pull <host> /tmp/shot.png <local.png>` and read the local file. Monitor names come from `remote.py run <host> 'hyprctl monitors -j'`.
+- **Act:** `remote.py run <host> 'python3 -I $DC/pointer.py click X Y'`, with coordinates in that machine's layout.
+- **An Orca terminal there:** `remote.py run <host> 'orca terminal read --terminal <handle> --screen --json'` and `orca terminal send` as above; handles come from `remote.py run <host> 'python3 -I $AC/orca_env.py agents'`.
+
+The user may be sitting at that machine while you are not told. Say which machine's pointer you are taking, and prefer the Orca route, which touches no mouse.
+
 ## Before touching anything
 
 1. Confirm the tools: `command -v grim hyprctl wtype`, and that `/dev/uinput` is writable by this user (`getfacl /dev/uinput`). With no write access, the clicker fails; tell the user rather than reaching for root.

@@ -1,6 +1,6 @@
 ---
 name: agent-comms
-description: Talk to other agents on this machine: Claude Code sessions, Codex sessions and exec lanes, and Antigravity (agy, Google's Gemini agent). Use when messaging or answering a peer session, reporting on what other sessions are doing, launching or correcting a lane from another vendor, letting a non-Claude agent reach a Claude session, or settling who owns a shared resource (a game, an editor, the GPU).
+description: Talk to other agents on this machine or on the user's other machines: Claude Code sessions, Codex sessions and exec lanes, and Antigravity (agy, Google's Gemini agent). Use when messaging or answering a peer session, reporting on what other sessions are doing, launching or correcting a lane from another vendor, letting a non-Claude agent reach a Claude session, reaching an agent or starting a lane on another machine (home PC, laptop) over Tailscale, or settling who owns a shared resource (a game, an editor, the GPU).
 ---
 
 # Agent comms
@@ -38,6 +38,32 @@ With `--quota`, it also reads remaining quota per harness so a coordinator can r
 | Emergency `SendMessage` into unmonitored Claude session | `claude` | `haiku` | `low` | Only when the target Claude session is not watching `~/.agent-mailbox/`; spends Claude Code quota. |
 
 The old `gemini` CLI is retired for individual accounts ("IneligibleTierError ... migrate to Antigravity"); use `agy`. `agy -p` cannot log in by itself. When it waits for an authorization code or says "authentication required", leave agy out and ask the user to run `agy` once in a terminal on their desktop session. A session inside a nested compositor (lwfa) can't reach the stored login at all.
+
+## Inside Orca
+
+Orca is the agent IDE that hosts agent CLIs in terminal panes and tracks each one's state. `scripts/orca_env.py status` says whether this shell is in an Orca pane and whether Orca's runtime answers. With Orca absent, everything else in this skill works as written; with it present, prefer the routes below. The `orca` CLI itself is covered by the `orca-cli` skill, supervised Orca workers by `orchestration`.
+
+- **See peers:** `list_peers.py` gains an `ORCA` column (`working`, `waiting`, `blocked`, `done`), and `scripts/orca_env.py agents` lists every Orca-hosted agent with its terminal handle. `child` marks a process an Orca-hosted agent started (a headless lane): it has no pane, so reach it through its mailbox. Sessions outside Orca (VS Code, plain terminals, headless lanes) never appear in Orca's sidebar; `list_peers.py` still shows them.
+- **Send:** `scripts/mail.py send <peer> "<text>" --orca` types the mail into the peer's terminal as a prompt. It costs no model tokens, works for every harness, and lands at the peer's next turn boundary; `turn_started` in the receipt is the proof it was taken. `--claude-relay` uses this route by itself when the Claude peer sits in an Orca pane, and `orca:<handle or tab title>` addresses an agent of a harness the other listers do not know. The text appears in the pane the user is looking at, so keep it one self-contained line, and use the plain mailbox for anything that can wait.
+- **A `waiting` peer takes no prompt** (`agent_prompt_blocked`): a question, trust or permission box is open. Answer it with the user's choice the way the `desktop-control` skill describes for Orca terminals, without touching the mouse.
+- **Read a peer:** `orca terminal read --terminal <handle> --screen` shows what its pane shows now; `orca search "<exact phrase>"` finds past sessions.
+- **Handles are reissued when Orca restarts.** Look one up when you need it (`orca_env.py agents`); never keep one in a brief or a note.
+- **Lanes:** `run_lane.sh --orca ...` starts a lane as a visible tab; see "Lead to a lane".
+- **From outside Orca, follow Orca-hosted agents** with `tail -f ~/.agent-mailbox/.orca-events.jsonl` (one JSON line per state change: `working`, `waiting`, `blocked`, `done`). The Agent Desk Orca plugin (`~/development/agent-desk`) writes it and shows the reverse view in Orca: sessions outside Orca, unread mail, quotas, and a quiet-time flag while a game runs. No feed file means the plugin is not loaded on that machine.
+
+## Other machines
+
+The user's machines reach each other over Tailscale, and `scripts/remote.py` runs this skill's scripts on the other one through SSH. Nothing listens and nothing is synced: each machine keeps its own mailbox and sessions, and `ListAgents` and `SendMessage` only ever see this machine.
+
+- **Who is there:** `remote.py hosts` lists the registered machines and whether each answers. `list_peers.py --hosts` (or `--host <name>`) adds their sessions with a `HOST` column, and `--quota` adds their quotas.
+- **Address:** `<peer>@<host>`, with `<peer>` exactly as on its own machine (`peer-01@laptop`, `codex:<thread-id>@laptop`, `orca:<tab title>@laptop`, `<lane>@laptop`). `<host>` is the registered name, an alias or the Tailscale name.
+- **Send:** `mail.py send <peer>@<host> "<text>" [--deliver] [--orca] [--claude-relay] [--resume]`. The other machine stores the mail and wakes the peer by its own rules, so every flag means what it means locally. Plain mail waits until the peer reads its mailbox. To be read now, use `--orca` for a peer in an Orca pane (free; `turn_started` in the receipt is the proof) or `--claude-relay` for a Claude session outside Orca (one haiku turn on that machine).
+- **Replies** land in this machine's mailbox under your own name, sent from `<harness>:<id>@<their host>`. Nothing wakes you: run `mail.py watch <your name> --ack` under Monitor while you wait, or read between steps.
+- **A lane there:** `remote.py lane <host> [--orca] <vendor> <model> <effort> <root> <lane> <local brief.md>` copies the brief over, starts `run_lane.sh` detached and prints the run folder, the watch command and the lane's address. `<root>` is a path on that machine. The lane is told who leads it and how to write back. It sees none of your files, so the brief carries everything or names paths on its own machine; `remote.py push` and `pull` copy files.
+- **Anything else there:** `remote.py run <host> '<command>'` runs a shell command with the agent CLIs on `PATH`, the desktop session's variables set, and `$AC` and `$DC` holding that machine's agent-comms and desktop-control script folders. Single-quote the command so they expand there: `remote.py run laptop 'python3 -I $AC/orca_env.py agents'`.
+- **New machine:** install this skill there, make SSH keys work both ways, then `remote.py add <name> <user>@<tailscale name> [alias...]` on one side. It registers both directions and says so when the way back fails.
+- **No answer:** `remote.py hosts` gives the SSH error. `tailscale status` shows whether the machine is online; a laptop that sleeps is offline. Mail is not queued for an offline machine: the send fails and you send again later. Do not change either machine's VPN or Tailscale setup to fix a route. Tailscale runs in userspace mode beside another VPN on purpose, which is why plain `ssh <tailscale ip>` times out and `remote.py` dials through `tailscale nc`.
+- **The shared-resource rules at the end apply per machine.** A game on the home PC does not make the laptop quiet, and the other machine has its own owner sessions: ask them the same way.
 
 ## Claude session to Claude session
 
@@ -81,11 +107,14 @@ Launch it as a tracked background run, read the run folder from its first output
 
 Picking: high effort for the lane's real work, low for relays, lookups and checks.
 
+With `--orca` in front (`run_lane.sh --orca <vendor> ...`, Claude and Codex), the lane opens as an agent tab in Orca named after the lane, and the same command watches it: it prints what the lane says and any box it is stuck on, and exits when the lane's turn ends, so it needs no `watch_lane.py`. Its id is the Orca terminal handle (`id.txt`). `--resume <handle> "<msg>"` types into the live lane, and `--attach <handle>` watches again after you answered a box. `<root>` must be an Orca workspace (`orca repo add --path <root>` once); when Orca cannot host the lane the script says why and runs it headless. Add a project you mean to keep: the CLI cannot take a folder project out again (`orca worktree rm` refuses a project root), only the project's `...` menu in Orca's sidebar, **Remove Project**, can.
+
 To get a message to a running lane:
 
 - **Codex exec lane, mid-run:** `codex queue --thread <id> --message "..."` answers "Queued" but the running turn never sees it. The queued text is delivered on the next `codex exec resume`, ahead of that resume's own prompt, and cannot be removed. So a correction is: write the addendum, stop the lane at a quiet moment, resume. A queued message you forgot about will surprise the next resume.
 - **Interactive or goal-mode Codex session:** `codex queue --thread <id> --message "..."` lands at its next turn boundary. The session uuid is in its rollout filename under `~/.codex/sessions/YYYY/MM/DD/`.
 - **Claude or agy lane:** neither takes messages mid-run. Stop it and resume with the correction.
+- **Any lane started with `--orca`:** `run_lane.sh --orca ... --resume <handle> "<correction>"` reaches it at its next turn boundary, no stop needed.
 
 If `agy` on `PATH` is a shell script marked `agy-shared-invocation-lock`, it is a wrapper around the real binary that lets several headless runs share one OAuth token: print runs take a shared lock and run in parallel, and one caller refreshes the token when it is about to expire. Always launch through that wrapper, never its `agy.native`, and leave the wrapper as it is. Exit code 75 means the lock wait timed out; retry later.
 

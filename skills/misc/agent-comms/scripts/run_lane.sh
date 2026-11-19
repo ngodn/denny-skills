@@ -4,6 +4,14 @@
 #
 #   run_lane.sh <vendor> <model> <effort> <root> <lane> <brief.md> [extra prompt]
 #   run_lane.sh <vendor> <model> <effort> <root> <lane> --resume <id> "<message>"
+#   run_lane.sh --orca <vendor> <model> <effort> <root> <lane> <brief.md> | --resume <handle> "<msg>" | --attach <handle>
+#
+# --orca (or LANE_ORCA=1) starts the lane as a visible agent tab in Orca, the agent IDE, when Orca
+# is running and <root> is one of its workspaces, and then watches it: this script prints the lane's
+# messages and any question it is stuck on, and exits when its turn ends (see orca_lane.py for the
+# exit codes). There the id is the Orca terminal handle, a message is typed into the live lane with
+# --resume, and --attach only watches. It needs no watch_lane.py. When Orca cannot host the lane
+# (not running, folder not a workspace, vendor agy) it says so and runs headless as usual.
 #
 #   vendor  claude | codex | agy
 #   model   a full model id, or a short name:
@@ -23,6 +31,7 @@
 # Prints the run folder first, so a watcher (watch_lane.py) can be pointed at it at once.
 set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ORCA="${LANE_ORCA:-}"; if [ "${1:-}" = "--orca" ]; then ORCA=1; shift; fi
 VENDOR="${1:?vendor}"; MODEL="${2:?model}"; EFFORT="${3:?effort}"
 ROOT="$(cd "${4:?root}" && pwd)"; LANE="${5:?lane}"; shift 5
 case "$EFFORT" in low|medium|high) ;; *) echo "effort must be low, medium or high" >&2; exit 2 ;; esac
@@ -48,7 +57,9 @@ mkdir -p "$RUN"; RUN="$(realpath "$RUN")"; echo "$RUN"  # codex -o refuses a pat
 echo "$VENDOR" > "$RUN/vendor.txt"; echo "$MODEL $EFFORT" > "$RUN/model.txt"
 
 RESUME=""
-if [ "${1:-}" = "--resume" ]; then
+if [ "${1:-}" = "--attach" ]; then
+  exec python3 -I "$SCRIPT_DIR/orca_lane.py" attach "$RUN" "${2:?handle}" "$LANE"
+elif [ "${1:-}" = "--resume" ]; then
   RESUME="${2:?id}"; shift 2; printf '%s\n' "${*:-continue}" > "$RUN/prompt.md"
 else
   BRIEF="${1:?brief}"; shift
@@ -56,6 +67,17 @@ else
     [ -n "${*:-}" ] && printf '\n%s\n' "$*"; } > "$RUN/prompt.md"
 fi
 PROMPT="$(cat "$RUN/prompt.md")"
+
+if [ -n "$ORCA" ]; then
+  if [ -n "$RESUME" ]; then
+    case "$RESUME" in term_*) exec python3 -I "$SCRIPT_DIR/orca_lane.py" resume "$RUN" "$RESUME" "$LANE" ;; esac
+    echo "run_lane: --resume id is not an Orca terminal handle, resuming headless" >&2
+  else
+    python3 -I "$SCRIPT_DIR/orca_lane.py" start "$RUN" "$VENDOR" "${ORCA_MODEL:-$MODEL}" "$EFFORT" "$ROOT" "$LANE"
+    CODE=$?; [ "$CODE" = 2 ] || exit $CODE
+    echo "run_lane: running headless instead" >&2
+  fi
+fi
 EXTRA_DIRS=(); for d in ${LANE_ADD_DIRS:-}; do EXTRA_DIRS+=(--add-dir "$d"); done
 
 cd "$ROOT"

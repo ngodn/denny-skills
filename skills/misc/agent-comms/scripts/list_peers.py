@@ -3,7 +3,10 @@
 with session id, model, cwd, title, and busy/idle/waiting state, plus optional quota readout.
 
 Usage:
-  list_peers.py [--json] [--quota] [--recent N]
+  list_peers.py [--json] [--quota] [--recent N] [--no-orca]
+
+When Orca (the agent IDE) is running, each session hosted in an Orca pane also gets its Orca
+state and terminal handle, and agents only Orca knows are appended. --no-orca skips that.
 """
 import glob
 import json
@@ -17,6 +20,7 @@ import time
 from urllib.parse import unquote, urlparse
 
 HOME = os.path.expanduser("~")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 IDLE_HELPERS = (
     "mcp-for-blender",
     "chrome-devtools-mcp",
@@ -598,6 +602,53 @@ def read_quotas():
     return quotas
 
 
+def print_table(peers):
+    if not peers:
+        print("No sessions found.")
+        return
+    # The ORCA column only appears when some session runs in an Orca pane: its Orca state,
+    # or "child" for a process an Orca-hosted agent started (it has no pane of its own).
+    # The HOST column only appears when sessions from another machine are listed; such a
+    # session's address is <address>@<host>.
+    with_orca = any(p.get("orca") for p in peers)
+    with_host = any(p.get("host") for p in peers)
+    orca_head = f"{'ORCA':<9} " if with_orca else ""
+    host_head = f"{'HOST':<12} " if with_host else ""
+    print(f"{host_head}{'HARNESS':<8} {'STATUS':<8} {orca_head}{'PID':<8} {'MODEL':<26} {'ID / ADDRESS':<38} {'TITLE':<28} CWD")
+    for p in peers:
+        pid_s = str(p["pid"]) if p["pid"] else "-"
+        addr = p["address"] if p["harness"] == "claude" else p["id"]
+        if p.get("host"):
+            addr = f"{addr}@{p['host']}"
+        orca_s = ""
+        if with_orca:
+            o = p.get("orca")
+            orca_s = f"{('child' if o.get('inherited') else str(o.get('state') or 'pane')) if o else '-':<9} "
+        host_s = f"{p.get('host') or 'here':<12} " if with_host else ""
+        width = 37 if not p.get("host") else max(37, len(addr))
+        print(
+            f"{host_s}{p['harness']:<8} {p['status']:<8} {orca_s}{pid_s:<8} "
+            f"{str(p['model'])[:25]:<26} {addr[:width]:<38} "
+            f"{str(p['title'])[:27]:<28} {p['cwd']}"
+        )
+
+
+def print_quotas(quotas):
+    cc = quotas.get("claude", {})
+    if "seven_day_remaining_pct" in cc:
+        print(
+            f"claude : weekly {cc.get('seven_day_remaining_pct')}% remaining "
+            f"(5h: {cc.get('five_hour_remaining_pct')}% remaining, resets {cc.get('seven_day_resets_at')})"
+        )
+    cx = quotas.get("codex", {})
+    if "weekly_remaining_pct" in cx:
+        print(f"codex  : weekly {cx.get('weekly_remaining_pct')}% remaining (plan: {cx.get('plan_type')})")
+    ag = quotas.get("agy", {})
+    for bid, b in ag.items():
+        if isinstance(b, dict) and "remaining_pct" in b:
+            print(f"agy    : {bid:<14} {b['remaining_pct']:>6}% remaining (resets {b.get('reset_time')})")
+
+
 def main():
     args = sys.argv[1:]
     as_json = "--json" in args
@@ -612,43 +663,42 @@ def main():
         + list_codex_sessions(recent=recent)
         + list_agy_sessions(recent=recent)
     )
+    if "--no-orca" not in args:
+        try:
+            import orca_env
+            peers = orca_env.annotate(peers)
+        except Exception:
+            pass
     quotas = read_quotas() if want_quota else None
+
+    # --hosts adds the sessions on every registered machine, --host <name> on one (remote.py).
+    host_errors, host_quotas = {}, {}
+    names = [args[i + 1] for i, a in enumerate(args) if a == "--host" and i + 1 < len(args)]
+    if "--hosts" in args or names:
+        import remote
+        theirs, host_errors, host_quotas = remote.peers(names, quota=want_quota, recent=recent)
+        peers = peers + theirs
 
     if as_json:
         out = {"peers": peers}
         if quotas is not None:
             out["quotas"] = quotas
+        if host_quotas:
+            out["host_quotas"] = host_quotas
+        if host_errors:
+            out["host_errors"] = host_errors
         print(json.dumps(out, indent=2))
         return
 
-    if not peers:
-        print("No sessions found.")
-    else:
-        print(f"{'HARNESS':<8} {'STATUS':<8} {'PID':<8} {'MODEL':<26} {'ID / ADDRESS':<38} {'TITLE':<28} CWD")
-        for p in peers:
-            pid_s = str(p["pid"]) if p["pid"] else "-"
-            addr = p["address"] if p["harness"] == "claude" else p["id"]
-            print(
-                f"{p['harness']:<8} {p['status']:<8} {pid_s:<8} "
-                f"{str(p['model'])[:25]:<26} {addr[:37]:<38} "
-                f"{str(p['title'])[:27]:<28} {p['cwd']}"
-            )
-
+    print_table(peers)
     if quotas:
         print("\n=== QUOTA REMAINING ===")
-        cc = quotas.get("claude", {})
-        if "seven_day_remaining_pct" in cc:
-            print(
-                f"claude : weekly {cc.get('seven_day_remaining_pct')}% remaining "
-                f"(5h: {cc.get('five_hour_remaining_pct')}% remaining, resets {cc.get('seven_day_resets_at')})"
-            )
-        cx = quotas.get("codex", {})
-        if "weekly_remaining_pct" in cx:
-            print(f"codex  : weekly {cx.get('weekly_remaining_pct')}% remaining (plan: {cx.get('plan_type')})")
-        ag = quotas.get("agy", {})
-        for bid, b in ag.items():
-            if isinstance(b, dict) and "remaining_pct" in b:
-                print(f"agy    : {bid:<14} {b['remaining_pct']:>6}% remaining (resets {b.get('reset_time')})")
+        print_quotas(quotas)
+    for host, q in host_quotas.items():
+        print(f"\n=== QUOTA REMAINING on {host} ===")
+        print_quotas(q)
+    for host, err in host_errors.items():
+        print(f"{host}: no answer ({err})", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,8 @@
 
 Usage:
   mail.py send <to> <text...> [--from ID] [--harness H] [--model M] [--reply-to MSG_ID]
-                              [--deliver] [--claude-relay] [--resume]
+                              [--deliver] [--orca] [--claude-relay] [--resume]
+  mail.py send <to>@<host> ...   the same, to an agent on another machine (see remote.py)
   mail.py read <me> [--keep] [--json]
   mail.py watch <me> [--once] [--ack] [--from-now] [--timeout SEC] [--interval SEC]
 """
@@ -22,6 +23,8 @@ import time
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 import list_peers  # noqa: E402
+import orca_env  # noqa: E402
+import remote  # noqa: E402
 
 HOME = os.path.expanduser("~")
 MAILBOX_ROOT = os.environ.get("AGENT_MAILBOX_DIR", os.path.join(HOME, ".agent-mailbox"))
@@ -29,6 +32,47 @@ MAILBOX_ROOT = os.environ.get("AGENT_MAILBOX_DIR", os.path.join(HOME, ".agent-ma
 
 def sanitize_box(name):
     return re.sub(r"[^A-Za-z0-9._-]+", "_", name.strip()).strip("_") or "default"
+
+
+def split_host(target):
+    """`<peer>@<host>` names an agent on another registered machine: (peer, (name, entry)).
+    A local address, or one that names this machine, comes back as (peer, None)."""
+    if "@" not in target:
+        return target, None
+    rest, host = target.rsplit("@", 1)
+    if not rest or not host or "/" in host or " " in host:
+        return target, None
+    if remote.is_self(host):
+        return rest, None
+    found = remote.find(host)
+    if found:
+        return rest, found
+    if remote.unregistered_tailnet_host(host):
+        sys.exit(f"mail.py: '{host}' is on the tailnet but not registered. Add it once with: "
+                 f"python3 {os.path.join(SCRIPT_DIR, 'remote.py')} add <name> <user>@{host}")
+    return target, None
+
+
+def send_remote(raw_to, peer, found, body, sender, reply_to, flags):
+    """Hand the message to mail.py on the other machine, which stores and delivers it there."""
+    name, host = found
+    frm = sender["id"] if "@" in sender["id"] else f"{sender['id']}@{remote.self_name()}"
+    args = ["send", peer, "-", "--from", frm, "--harness", sender["harness"], "--from-model", sender["model"]]
+    if reply_to:
+        args += ["--reply-to", reply_to]
+    code, out, err = remote.script(host, "mail.py", args + flags, stdin=body, timeout=180)
+    try:
+        res = json.loads(out.strip().splitlines()[-1])
+    except Exception:
+        res = {"ok": False, "error": (err or out).strip()[-400:] or f"exit {code}"}
+    res["host"] = name
+    if not res.get("ok"):
+        res["note"] = f"not sent: {name} did not take it. Check `remote.py hosts`."
+    for line in err.strip().splitlines():
+        if line.startswith("mail.py: warning"):
+            sys.stderr.write(line + "\n")
+    print(json.dumps(res))
+    sys.exit(0 if res.get("ok") else 1)
 
 
 def resolve_recipient(raw_target):
@@ -42,6 +86,11 @@ def resolve_recipient(raw_target):
     """
     target = raw_target.strip()
     explicit_harness = None
+    if target.startswith("orca:"):
+        # An agent addressed by its Orca terminal: a handle, a pane key or a pane title.
+        handle = orca_env.resolve_handle(target)
+        name = handle or target[5:]
+        return sanitize_box(name), "orca", name, name
     if ":" in target:
         pfx, rest = target.split(":", 1)
         if pfx in ("claude", "codex", "agy", "agy-ide"):
@@ -205,13 +254,60 @@ def format_one_line(header, body):
     return f"[MAIL id={header.get('id')} from={f_str}{rep}] {flat_body}"
 
 
-def deliver_message(box, harness, session_id, peer_addr, header, body, claude_relay=False, resume=False, model_override=None):
+def orca_handle_for(harness, session_id, peer_addr):
+    """Orca terminal handle of the pane a peer owns, or None (not in Orca, Orca down, or the
+    peer is a child process of another agent's pane)."""
+    if harness == "orca":
+        return orca_env.resolve_handle(session_id)
+    try:
+        if harness == "claude":
+            peers = list_peers.list_claude_sessions()
+        elif harness == "codex":
+            peers = list_peers.list_codex_sessions()
+        elif harness == "agy":
+            peers = list_peers.list_agy_sessions()
+        else:
+            return None
+        for p in orca_env.annotate(peers):
+            if session_id in (p.get("id"), p.get("address")) or peer_addr == p.get("address"):
+                return (p.get("orca") or {}).get("handle")
+    except Exception:
+        pass
+    return None
+
+
+ORCA_INLINE_LIMIT = 1200
+
+
+def deliver_message(box, harness, session_id, peer_addr, header, body, claude_relay=False, resume=False,
+                    model_override=None, orca=False):
     frm = header.get("from") or {}
     sender_addr = f"{frm.get('harness', 'agent')}:{frm.get('id', 'unknown')}"
     reply_hint = (
         f"Reply with: python3 {os.path.abspath(__file__)} send {sender_addr} "
         f"--reply-to {header['id']} \"<your reply>\" --deliver"
     )
+
+    # Orca route: type the mail into the peer's Orca terminal as a prompt. Zero model tokens,
+    # works for every harness, and the peer takes it at its next turn boundary. Asked for with
+    # --orca, the whole route for an orca: address, and it replaces the paid --claude-relay
+    # whenever the Claude peer sits in an Orca pane.
+    if orca or harness == "orca" or (claude_relay and harness == "claude"):
+        handle = orca_handle_for(harness, session_id, peer_addr)
+        if handle:
+            flat = " / ".join(l.strip() for l in body.splitlines() if l.strip())
+            if len(flat) > ORCA_INLINE_LIMIT:
+                flat = (flat[:300] + f" ... (long message: read all of it with "
+                        f"python3 {os.path.abspath(__file__)} read {box} --keep)")
+            text = f"[Mail {header['id']} from {sender_addr} ({frm.get('model', '')})] {flat} ({reply_hint})"
+            res = orca_env.send(handle, text)
+            res["bridge"] = "orca_terminal"
+            if not res.get("ok"):
+                res["note"] = f"not typed in; the message still waits in mailbox {box}"
+            return res
+        if orca or harness == "orca":
+            return {"bridge": "orca_terminal", "ok": False,
+                    "note": f"no Orca terminal for this peer (not in Orca, or Orca is down); stored in {box}"}
 
     if harness == "agy":
         bridge = os.path.join(SCRIPT_DIR, "agy_bridge.py")
@@ -261,8 +357,8 @@ def deliver_message(box, harness, session_id, peer_addr, header, body, claude_re
 
 
 def cmd_send(args):
-    from_id = harness = model = reply_to = model_override = None
-    deliver = claude_relay = resume = False
+    from_id = harness = model = from_model = reply_to = model_override = None
+    deliver = claude_relay = resume = orca = False
     pos = []
     i = 0
     while i < len(args):
@@ -273,10 +369,14 @@ def cmd_send(args):
             harness = args[i + 1]; i += 2
         elif a == "--model" and i + 1 < len(args):
             model = args[i + 1]; model_override = model; i += 2
+        elif a == "--from-model" and i + 1 < len(args):
+            from_model = args[i + 1]; i += 2  # the sender's model only; --model also picks the wake-up model
         elif a == "--reply-to" and i + 1 < len(args):
             reply_to = args[i + 1]; i += 2
         elif a == "--deliver":
             deliver = True; i += 1
+        elif a == "--orca":
+            orca = True; deliver = True; i += 1
         elif a == "--claude-relay":
             claude_relay = True; deliver = True; i += 1
         elif a == "--resume":
@@ -295,8 +395,16 @@ def cmd_send(args):
         sender["id"] = from_id
     if harness:
         sender["harness"] = harness
-    if model:
-        sender["model"] = model
+    if model or from_model:
+        sender["model"] = from_model or model
+
+    peer, found = split_host(raw_to)
+    if found:
+        flags = [a for a in args if a in ("--deliver", "--orca", "--claude-relay", "--resume")]
+        if model_override:
+            flags += ["--model", model_override]
+        send_remote(raw_to, peer, found, body, sender, reply_to, flags)
+    raw_to = peer
 
     box, target_harness, target_sid, target_addr = resolve_recipient(raw_to)
     # A misspelled name would silently create a mailbox nobody reads. Warn when the name
@@ -329,7 +437,7 @@ def cmd_send(args):
     if deliver:
         out["delivery"] = deliver_message(
             box, target_harness, target_sid, target_addr, header, body,
-            claude_relay=claude_relay, resume=resume, model_override=model_override,
+            claude_relay=claude_relay, resume=resume, model_override=model_override, orca=orca,
         )
     print(json.dumps(out))
 
