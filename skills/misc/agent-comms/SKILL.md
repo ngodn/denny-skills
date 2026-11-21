@@ -107,6 +107,16 @@ Launch it as a tracked background run, read the run folder from its first output
 
 Picking: high effort for the lane's real work, low for relays, lookups and checks.
 
+`scripts/run_lane_unit.sh` takes the same arguments and runs the lane as its own systemd user unit (`lane-<lane>-<time>` under `background.slice`). Use it for any lane that builds, cooks or runs an engine editor: a lane started from an editor or terminal shares that app's cgroup, and under memory pressure systemd-oomd kills the whole cgroup, editor session and every sibling lane included. As a unit the lane also outlives the session that launched it.
+
+`scripts/autoresume.py` restarts Claude lanes that a usage limit cut off ("You've hit your 5-hour limit · resets 6:40am"), with nobody at the keyboard. It runs outside any agent session, so the limit cannot stop it:
+
+- `autoresume.py show <root>...` prints every lane's newest run and what it would do with it.
+- `autoresume.py service install <root>... [--mail <your mailbox>]` installs a systemd user service that survives a reboot; `service status` and `service remove` manage it. `watch <root>...` is the same loop in the foreground, `once` a single sweep.
+- It resumes a lane only when its newest run is a Claude run that exited non-zero on a limit message less than 24 hours ago and the reset time has passed, from that run's own session id, model, effort and `add-dirs.txt`. `--model` and `--effort` resume everything on a cheaper setting.
+- A run that exited 0 is finished and is left for the lead. `touch <run folder>/no-autoresume` keeps a cut-off lane stopped.
+- Codex and agy lanes are skipped: only Claude Code's limit message is known to it.
+
 With `--orca` in front (`run_lane.sh --orca <vendor> ...`, Claude and Codex), the lane opens as an agent tab in Orca named after the lane, and the same command watches it: it prints what the lane says and any box it is stuck on, and exits when the lane's turn ends, so it needs no `watch_lane.py`. Its id is the Orca terminal handle (`id.txt`). `--resume <handle> "<msg>"` types into the live lane, and `--attach <handle>` watches again after you answered a box. `<root>` must be an Orca workspace (`orca repo add --path <root>` once); when Orca cannot host the lane the script says why and runs it headless. Add a project you mean to keep: the CLI cannot take a folder project out again (`orca worktree rm` refuses a project root), only the project's `...` menu in Orca's sidebar, **Remove Project**, can.
 
 To get a message to a running lane:

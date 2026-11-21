@@ -1,6 +1,6 @@
 ---
 name: agent-lanes
-description: Run helper agents (Codex exec lanes, Gemini, research subagents) from a lead session without stalling the main task. Use when briefing, launching, watching, correcting or stopping a lane, sharing a GPU or other machine resource with a lane or with the user's own app, or sending agents to do web research.
+description: Run helper agents (Codex exec lanes, Gemini, research subagents) from a lead session without stalling the main task. Use when briefing, launching, watching, correcting or stopping a lane, sharing a GPU or other machine resource with a lane or with the user's own app, keeping lanes working through a usage limit, or sending agents to do web research.
 ---
 
 # Agent lanes
@@ -61,6 +61,17 @@ matter what a lane is doing.
   (`ps -eo args | grep -qE '^[^ ]*Game-Win64-Shipping\.exe'`). The process can rename itself (Mortal
   Shell II shows as `GameThread`), so `pgrep -x` misses it, and `pgrep -f` also matches shells that only
   mention the name.
+
+## Lanes that keep going without the lead
+
+A usage limit stops every lane and the lead in the same minute, and by default nothing moves again until the user returns and says "continue". Set a long job up so that only the lead waits:
+
+- **Each lane in its own unit, with auto-resume watching the root.** Start heavy lanes with `run_lane_unit.sh` and install `autoresume.py service install <root>` once per machine (call the Skill tool with "agent-comms" for both). A lane cut off by the limit then restarts by itself a few minutes after the reset.
+- **State on disk, always.** Brief every lane to keep its report file current as it works (done, running, next, open, and the command that continues a batch). A resumed lane starts from that file, and so does a lead that comes back hours later.
+- **Machine work runs through the limit.** A solve, render or build that needs no model for hours goes into its own unit (`systemd-run --user --slice=background.slice --unit=<name> ...`) with a log and a state file. As a child of the lane it dies with the lane's session; as a unit it is still running when the lane is resumed, and the lane's first step back is to check on it.
+- **Chain the work in the brief.** The lead cannot hand out the next job while it is itself cut off, so a lane's brief names what follows each finished stage. A lane that exits 0 is finished and stays stopped until the lead returns.
+- **Fewer, cheaper lanes last longer.** Four high-effort lanes on the top model emptied a five-hour window in ninety minutes. Give each lane the cheapest model and effort that does its job, and say in the brief why a lane needs more.
+- **A deliberate stop stays stopped:** `touch <run folder>/no-autoresume` before or after stopping a lane the limit already cut off.
 
 ## Lanes the user can see (Orca)
 

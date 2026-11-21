@@ -27,7 +27,8 @@
 #   id      the session/thread/conversation id from the earlier run's id.txt
 #
 # Run folder: <root>/work/agents/<lane>-<stamp>/ with prompt.md, events.jsonl (the vendor's own
-# stream), stderr.log, pid.txt, exit.txt, id.txt, last-message.md, vendor.txt, model.txt.
+# stream), stderr.log, pid.txt, exit.txt, id.txt, last-message.md, vendor.txt, model.txt, and add-dirs.txt
+# when LANE_ADD_DIRS was set.
 # Prints the run folder first, so a watcher (watch_lane.py) can be pointed at it at once.
 set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -55,6 +56,7 @@ esac
 RUN="$ROOT/work/agents/$LANE-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$RUN"; RUN="$(realpath "$RUN")"; echo "$RUN"  # codex -o refuses a path through a symlinked folder
 echo "$VENDOR" > "$RUN/vendor.txt"; echo "$MODEL $EFFORT" > "$RUN/model.txt"
+[ -n "${LANE_ADD_DIRS:-}" ] && echo "$LANE_ADD_DIRS" > "$RUN/add-dirs.txt"  # autoresume.py reads it back
 
 RESUME=""
 if [ "${1:-}" = "--attach" ]; then
