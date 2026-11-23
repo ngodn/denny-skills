@@ -110,6 +110,17 @@ When recooking assets that already shipped, compare against the released
 cooked bytes, not only decoded data: some packages match only in the release's
 serialization mode (tagged versus unversioned properties).
 
+In editor Python, `str(obj)` includes a memory address that changes every editor
+run. Compare `obj.get_path_name()` when guarding bindings (post-process blueprint,
+physics asset, skeleton) before and after authoring, or the guard fails on a
+healthy asset.
+
+Review renders do not need optimized shaders. In a render-only editor process,
+`r.Shaders.Optimize=0` (never in the shipping cook) and normal priority for
+ShaderCompileWorker cut a cold shader compile from hours to minutes on a busy
+machine. A deleted derived-data cache costs that full compile again, so keep the
+cache of any project with a fix release still likely.
+
 ## Package and verify
 
 Use a packer/converter verified for the target container revision. Check mount
@@ -142,6 +153,20 @@ with the original (geometry, morphs, cloth, rig streams, shader maps) after
 applying the inverse path map; whole-container byte identity cannot survive a
 rename.
 
+Store the release zip with deflate and read the compression method of every
+entry back: a stored (uncompressed) entry can make a zip three to five times
+larger than the previous release with nothing else changed.
+
+Keep each release's exact baseline reachable: the shipped container trio and one
+build record that names it. Cleanup may remove a duplicate payload from a work
+folder only when the build record points at the copy that remains (the release
+zip). A fix release starts from that baseline, and a brief that names a stale
+build record sends the next lane to the wrong starting point.
+
+When a player says "the latest update changed X", diff the catalog, the morph
+digests and the slider recipes of every released version, not only the last two.
+Players skip versions, and the change often came from an earlier release.
+
 Install the concrete candidate through the project's established process, then
 check the game behaviors affected by the change. Record authored, cooked,
 packaged, installed and user-accepted states separately. Neither a Blender
@@ -164,3 +189,15 @@ switches and shaders come from the donor. Guard it by comparing `Parent`,
 `BasePropertyOverrides`, `StaticParametersRuntime` and the permutation flag with
 `FProperty::Identical_InContainer` on the player's own build.
 
+To rebuild a released mesh with one addition (a morph target, a material slot) and nothing else
+changed, first find the cook route that reproduces the released bytes: cook the unchanged source and
+compare the export data with the shipped file. Different routes (a Linux editor with the project's own
+commandlet, a Windows editor under Wine, a container image) give different bytes for the same asset,
+and old work folders often hold an earlier variant of the source than the one that shipped. Only when
+the unchanged cook matches byte for byte is a later difference known to be the addition. Then compare
+decoded geometry, weights, existing morphs and cloth old against new before repacking.
+
+Bridges between a mod runtime and reflected engine functions may refuse array arguments silently. A
+deformer that received an empty collider list this way rendered its fallback output (white patches)
+with no error anywhere. Read back what the engine side received, and make the shader or kernel guard
+the empty case.

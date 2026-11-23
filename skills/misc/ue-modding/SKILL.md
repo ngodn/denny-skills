@@ -47,7 +47,9 @@ trim and relocate cooked packages, and keep materials drawing after a game patch
 
 For character fitting, body shape sliders, retargeting, facial playback or secondary motion, read
 [ANIMATION.md](ANIMATION.md). Extracted geometry, authored behavior, cooked data
-and game appearance are separate verification stages.
+and game appearance are separate verification stages. For penetration or clearance
+between skinned surfaces across animations and sliders, read
+[CONTACT-MEASUREMENT.md](CONTACT-MEASUREMENT.md).
 
 For live reflection, read [RUNTIME-PROBING.md](RUNTIME-PROBING.md) and
 [CRASH-SAFETY.md](CRASH-SAFETY.md). Use [NATIVE-HOOKING.md](NATIVE-HOOKING.md)
@@ -61,6 +63,10 @@ For live gameplay input, driving menus through the bridge, or screenshots while
 the user works in another window, read [GAME-CONTROL.md](GAME-CONTROL.md).
 Prefer verified input addressed to the game window and native game captures
 before taking desktop focus.
+
+For a scripted run that launches the user's game unattended (stage, drive, record,
+restore, install what passed), read [LIVE-TEST-WINDOWS.md](LIVE-TEST-WINDOWS.md)
+before writing the script.
 
 ## Reload and installation are mechanism-specific
 
