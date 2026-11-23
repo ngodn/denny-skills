@@ -24,6 +24,11 @@ matter what a lane is doing.
 - **Shared tools are queued, not raced.** A single-instance tool other sessions also use (an engine
   editor, a GPU job) gets a background job that waits for it to be free. Run a build that depends on a
   lane's output after the lane finishes, so it runs once.
+- **Queue on a lock, not on a poll.** A job that polls for "no editor process" starves while other lanes
+  start runs back to back (one waited 37 minutes behind a chain of two-minute cooks), and two polling
+  jobs both start in the same free gap. Have every lane run the tool through `resource_lock.sh <name>`
+  (call the Skill tool with "agent-comms"), and when one job blocks the user's next step, tell the other
+  lanes to hold theirs until it is through.
 
 ## Brief
 
@@ -72,6 +77,44 @@ A usage limit stops every lane and the lead in the same minute, and by default n
 - **Chain the work in the brief.** The lead cannot hand out the next job while it is itself cut off, so a lane's brief names what follows each finished stage. A lane that exits 0 is finished and stays stopped until the lead returns.
 - **Fewer, cheaper lanes last longer.** Four high-effort lanes on the top model emptied a five-hour window in ninety minutes. Give each lane the cheapest model and effort that does its job, and say in the brief why a lane needs more.
 - **A deliberate stop stays stopped:** `touch <run folder>/no-autoresume` before or after stopping a lane the limit already cut off.
+
+## Leading for hours
+
+The user should never have to ask where things stand. Over a long job the lead's work is a loop: an event
+arrives, the lead looks, decides, hands out the next job, and says what changed.
+
+- **Three wake sources, all armed.** `leadwatch.sh` under Monitor (a lane unit ended, a result file
+  appeared, the game started or closed, disk is low, a heartbeat), `mail.py watch <lead> --ack` under
+  Monitor for lane mail, and a recurring scheduled prompt in the lead's own session (cron, every 30
+  minutes) that runs the same checks. A Monitor expires after 30 minutes: re-arm both on every expiry
+  notice. The scheduled prompt is what brings the lead back after a usage limit stopped it together
+  with the lanes; without it the lead slept through a night of finished lanes.
+- **Report on change, in the user's terms.** After each event tell the user what they can now see or
+  decide, with the file to open. Nothing changed is one line. Lane names, run ids and tool names stay out.
+- **Look before you pass on.** Open every render, sheet or recording a lane calls finished. If it does not
+  read as the intended thing at first glance, send it back with what you see first, in order, and what
+  would make it pass. Lanes grade their own work kindly; a lane that writes "not ready, here is why" is
+  doing it right and gets a decision, not a nudge.
+- **Answer at once, with the invariant.** A lane's question is answered in the same turn. An approval names
+  what must still hold afterwards (contacts stay put, hands do not move, the released file is untouched)
+  and the check that proves it, so the lane does not optimise one number and break another.
+- **Ask where a fault comes from before accepting a rule that hides it.** "The joint never moves" can be
+  the source data or our own conversion dropping it. One cheap look at the source decides whether the
+  fix is a repaired mapping or a synthetic rule.
+- **Lanes end their turn when they only wait.** An idle turn on a mailbox watch still spends the shared
+  limit. Run `mailwake.sh` (call the Skill tool with "agent-comms") so mail wakes a stopped lane, and brief
+  lanes to read their mailbox before ending a turn. Mail whose first line starts with `NOTICE` informs
+  without waking; a job that must wake its lane on completion sends plain mail, or the lead wakes the lane.
+- **A lane that ignores mail or is about to do harm:** kill its exact agent pid and resume it with the
+  order. A killed run leaves no `id.txt`, so resume with the session id from an earlier run folder.
+- **Freeze background work while the user's game or app runs.** `systemctl --user kill -s STOP <unit>`
+  pauses a solver or render unit without losing it, `-s CONT` continues it. Long jobs check for the game
+  themselves every few seconds; a shader compile ran three times longer under a full background load.
+- **Record the user's decisions where lanes read them** (the product's decision table), numbered, with the
+  user's own words. Then relay each to the lanes it changes. A decision that lives only in the chat is
+  lost at the next context reset.
+- **What "do whatever you recommend" covers:** choices inside the goal. It does not cover launching the
+  user's game while they use the machine, publishing, or deleting their data; those keep their own rule.
 
 ## Lanes the user can see (Orca)
 

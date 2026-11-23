@@ -117,13 +117,17 @@ Picking: high effort for the lane's real work, low for relays, lookups and check
 - A run that exited 0 is finished and is left for the lead. `touch <run folder>/no-autoresume` keeps a cut-off lane stopped.
 - Codex and agy lanes are skipped: only Claude Code's limit message is known to it.
 
+`scripts/mailwake.sh <root> <lane>...` wakes a Claude lane that ended its turn cleanly (exit 0) when mail newer than that exit arrives for it, from that run's own session id, model, effort and `add-dirs.txt`. With it a lane that only waits can end its turn instead of holding an idle turn open, and a peer's answer still reaches it within half a minute. Run it as its own unit so a usage limit cannot stop it (`systemd-run --user --unit=mailwake --slice=background.slice --collect <script> <root> <lane>...`). Mail whose first body line starts with `NOTICE` is left for the lane's next wake; `touch <run folder>/no-mailwake` holds one lane. It and `autoresume.py` never overlap: one takes runs that exited 0, the other runs cut off by a limit. Do not also keep your own "resume when the job ends" waiter on a lane it covers, or the lane is resumed twice.
+
+`scripts/leadwatch.sh [--units GLOB] [--files DIR]... [--proc NAME=REGEX]... [--disk PATH:GB]... [--beat SECONDS]` is the lead's one event stream, run under Monitor: a lane unit ended, a new result file in a folder the user will look at, a watched process (the game) started or closed, free disk under a floor, and a heartbeat. How the lead uses it is in `agent-lanes` ("Leading for hours").
+
 With `--orca` in front (`run_lane.sh --orca <vendor> ...`, Claude and Codex), the lane opens as an agent tab in Orca named after the lane, and the same command watches it: it prints what the lane says and any box it is stuck on, and exits when the lane's turn ends, so it needs no `watch_lane.py`. Its id is the Orca terminal handle (`id.txt`). `--resume <handle> "<msg>"` types into the live lane, and `--attach <handle>` watches again after you answered a box. `<root>` must be an Orca workspace (`orca repo add --path <root>` once); when Orca cannot host the lane the script says why and runs it headless. Add a project you mean to keep: the CLI cannot take a folder project out again (`orca worktree rm` refuses a project root), only the project's `...` menu in Orca's sidebar, **Remove Project**, can.
 
 To get a message to a running lane:
 
 - **Codex exec lane, mid-run:** `codex queue --thread <id> --message "..."` answers "Queued" but the running turn never sees it. The queued text is delivered on the next `codex exec resume`, ahead of that resume's own prompt, and cannot be removed. So a correction is: write the addendum, stop the lane at a quiet moment, resume. A queued message you forgot about will surprise the next resume.
 - **Interactive or goal-mode Codex session:** `codex queue --thread <id> --message "..."` lands at its next turn boundary. The session uuid is in its rollout filename under `~/.codex/sessions/YYYY/MM/DD/`.
-- **Claude or agy lane:** neither takes messages mid-run. Stop it and resume with the correction.
+- **Claude or agy lane:** neither takes messages mid-run. Stop it and resume with the correction. A run that was killed has no `id.txt`; pass the session id from an earlier run folder of the same lane to `--resume`.
 - **Any lane started with `--orca`:** `run_lane.sh --orca ... --resume <handle> "<correction>"` reaches it at its next turn boundary, no stop needed.
 
 If `agy` on `PATH` is a shell script marked `agy-shared-invocation-lock`, it is a wrapper around the real binary that lets several headless runs share one OAuth token: print runs take a shared lock and run in parallel, and one caller refreshes the token when it is about to expire. Always launch through that wrapper, never its `agy.native`, and leave the wrapper as it is. Exit code 75 means the lock wait timed out; retry later.
@@ -131,6 +135,8 @@ If `agy` on `PATH` is a shell script marked `agy-shared-invocation-lock`, it is 
 ## Shared resources
 
 A game, an engine editor, the GPU and the user's screen each have one owner at a time.
+
+**One at a time, by lock.** A job that needs a single-instance tool runs as `scripts/resource_lock.sh <name> [--busy REGEX] -- <command>` with a name the sessions agree on (`editor`, `cook`, `gpu`). Waiters take turns, so none starves behind a chain of short runs and two never start in the same gap; `--busy` also waits for a holder that does not use the lock (the user's game, a hand-started editor), and `resource_lock.sh --who <name>` prints the holder.
 
 1. **Before waiting on a busy resource, find its owner.** A running game or editor may be another session's test, not the user. Walk the process's parents (`ps -o ppid= -p <pid>`) to the session that started it, check `nvidia-smi` for GPU holders, and ask peers. Never tell the user they are holding something until you have checked.
 2. **Claim and release out loud.** When you take a shared resource for a run, tell the peers waiting on it what you hold and your expected release time; when you free it, message them at once. A peer whose job waits on it should start by itself on release (a watcher on the process, not a sleep).
