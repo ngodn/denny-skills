@@ -15,6 +15,17 @@ Reference for running Device42 discovery reliably and querying its data. The sin
 
 Sizing guidance changes between releases. Check Device42's published sizing guide rather than trusting a copy. As of writing it was roughly: small/medium estate (under 2,500 devices) MA at 4 vCPU / 16 GB / 150 GB SSD; medium/large (over 2,500 devices, or with ADM + Resource Utilisation + Storage enabled) MA at 16 vCPU / 64 GB / 150 GB SSD; one RC per 1,000 workloads at 2 vCPU / 4 GB / 50 GB; one WDS per 1,000 Windows targets at 2 vCPU / 8 GB / 50 GB.
 
+### What "workload" means in sizing, and why it isn't the job count
+
+Device42 never crisply defines "workload" in the sizing docs, but it means **one discovered and monitored compute instance**: a physical server, a VM, or a cloud instance (one OS instance). The sizing table gives it away by using "devices" for the MA tiers and "workloads" for the RC/WDS rows to mean the same thing, the count of target machines. Size an RC by the total count of unique machines that segment will end up discovering and monitoring, not by how many discovery jobs you schedule.
+
+Jobs and workloads are different axes, and this is the common confusion:
+
+- **Jobs** are the RC's concurrency/scheduling unit (`job-service.yaml`: `max_running_jobs` defaults to 10, `max_queued_jobs` to 1000). Running two jobs at once just uses two of the ten running slots. Two concurrent jobs is not "two workloads."
+- **Workloads** are the target devices those jobs touch. One discovery job pointed at a vCenter or a subnet can pull in hundreds of machines, so one job is nowhere near one workload. Two jobs hitting the same device still count it once (dedup is by device in the CMDB, not by job).
+
+What actually loads an RC is the ongoing per-device polling, not the discovery runs. In a real RC's `jobs.log`, the scheduled discovery job (e.g. `vServer`) ran a few dozen times in a day while the per-device `PeriodicRUJob` and `PeriodicSSJob` (Resource Utilisation and Storage Stats, polled on repeating intervals in batches of 32) each ran ~22,000 times. So the ~1,000 figure assumes RU/ADM/Storage monitoring is on. For one-shot discovery with no ongoing RU, a single RC handles far more than 1,000, because the recurring polling that dominates the load isn't running.
+
 ## Discovery pre-check behaviour by protocol
 
 This is the highest-value fact here.
