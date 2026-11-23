@@ -1,0 +1,3 @@
+interface:
+  display_name: "Video Mocap"
+  short_description: "Monocular video to animation, camera and face curves"

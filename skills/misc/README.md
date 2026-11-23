@@ -9,6 +9,7 @@ Kept around but rarely reached for. Installed by the link scripts, but not promo
 - **[linux-kernel-packaging](./linux-kernel-packaging/SKILL.md)**: Build and patch Linux kernels and out-of-tree modules on an Arch-family distro, and repackage a foreign binary app for Linux.
 - **[ue-modding](./ue-modding/SKILL.md)**: Set up extraction, Blender and Unreal authoring/cooking, then package and verify asset or runtime mods using the game's actual toolchain.
 - **[self-hosting](./self-hosting/SKILL.md)**: Run your own edge and remote access on a Linux box: static hosting behind one nginx, a passphrase gate, a locally-trusted HTTPS dev proxy, and VPN coexistence.
+- **[video-mocap](./video-mocap/SKILL.md)**: Turn monocular video into game animation, a camera track and face curves on a local GPU, with the traps that cost reruns.
 - **[agent-lanes](./agent-lanes/SKILL.md)**: Brief, launch, watch, correct and stop Codex, Gemini and research lanes from a lead session without stalling the main task.
 - **[desktop-control](./desktop-control/SKILL.md)**: See and drive a Hyprland desktop from a shell: screenshots, clicks, scrolls and typing, including answering question boxes in other agent sessions.
 - **[agent-comms](./agent-comms/SKILL.md)**: Talk to other agents on the machine or on your other machines over Tailscale: message Claude sessions, launch and watch Claude, Codex or Antigravity lanes on a chosen model and effort, relay from any agent into Claude, watch sessions, and settle who owns a shared game, editor or GPU.
