@@ -7,6 +7,7 @@ set -euo pipefail
 # by each agent harness:
 #   - ~/.claude/skills  (Claude Code)
 #   - ~/.agents/skills  (Codex and other Agent Skills-compatible harnesses)
+#   - ~/.gemini/config/skills  (Antigravity app and agy CLI, only when ~/.gemini exists)
 # Each entry is a symlink into this repo, so a `git pull` keeps installed
 # skills current. Re-run after a skill is added, removed, or renamed.
 #
@@ -26,6 +27,9 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DESTS=("$HOME/.claude/skills" "$HOME/.agents/skills")
+# Antigravity reads global skills from ~/.gemini/config/skills (app and CLI). Linked only on a machine that
+# has Antigravity, so the installer does not create a ~/.gemini for someone who never used it.
+[ -d "$HOME/.gemini" ] && DESTS+=("$HOME/.gemini/config/skills")
 BACKUP_ROOT="$REPO/backup"
 
 # ---- backup helpers ---------------------------------------------------------

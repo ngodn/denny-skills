@@ -4,6 +4,7 @@
 # by each agent harness:
 #   - $HOME\.claude\skills  (Claude Code)
 #   - $HOME\.agents\skills  (Codex and other Agent Skills-compatible harnesses)
+#   - $HOME\.gemini\config\skills  (Antigravity app and agy CLI, only when $HOME\.gemini exists)
 # Each entry is a directory junction into this repo, so a `git pull` keeps
 # installed skills current. Junctions need no admin rights or Developer Mode,
 # unlike symlinks. Re-run after a skill is added, removed, or renamed.
@@ -38,6 +39,8 @@ $Dests = @(
   (Join-Path $HOME '.claude\skills'),
   (Join-Path $HOME '.agents\skills')
 )
+# Antigravity reads global skills from .gemini\config\skills. Linked only on a machine that has it.
+if (Test-Path (Join-Path $HOME '.gemini')) { $Dests += (Join-Path $HOME '.gemini\config\skills') }
 
 # ---- backup helpers ---------------------------------------------------------
 # Created lazily on the first item actually saved, so a no-op run leaves no

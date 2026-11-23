@@ -32,7 +32,7 @@ One script does both: it links every skill into your agent's skill directory, an
 ./scripts/link-skills.sh
 ```
 
-Symlinks every skill into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (Codex and others).
+Symlinks every skill into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (Codex and others), and into `~/.gemini/config/skills` when Antigravity is installed.
 
 </details>
 
@@ -49,7 +49,7 @@ If scripts are blocked on your machine:
 powershell -ExecutionPolicy Bypass -File .\scripts\link-skills.ps1
 ```
 
-Creates directory junctions into `%USERPROFILE%\.claude\skills` and `%USERPROFILE%\.agents\skills`. Junctions need no admin rights or Developer Mode.
+Creates directory junctions into `%USERPROFILE%\.claude\skills` and `%USERPROFILE%\.agents\skills`, and into `%USERPROFILE%\.gemini\config\skills` when Antigravity is installed. Junctions need no admin rights or Developer Mode.
 
 </details>
 

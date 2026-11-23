@@ -31,7 +31,7 @@ cd denny-skills
 
 </canonical-block>
 
-Both scripts write into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (Codex and other Agent Skills-compatible harnesses). Linux and macOS get symlinks; Windows gets directory junctions, which need no admin rights or Developer Mode. Re-run after a skill is added, removed, or renamed; a plain `git pull` covers every other change.
+Both scripts write into `~/.claude/skills` (Claude Code) and `~/.agents/skills` (Codex and other Agent Skills-compatible harnesses), and into `~/.gemini/config/skills` (Antigravity app and `agy` CLI) on a machine that has a `~/.gemini` folder. Linux and macOS get symlinks; Windows gets directory junctions, which need no admin rights or Developer Mode. Re-run after a skill is added, removed, or renamed; a plain `git pull` covers every other change.
 
 ## The global rules file
 
