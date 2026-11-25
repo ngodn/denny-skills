@@ -1,5 +1,56 @@
 # denny-skills
 
+## 1.0.2
+
+### Patch Changes
+
+- [`00a9718`](https://github.com/ngodn/denny-skills/commit/00a9718eb05d485fe9871a8666151a954cefcbe3) Thanks [@ngodn](https://github.com/ngodn)! - `agent-comms`: a shared file mailbox (`mail.py`) that Claude Code, Codex and Antigravity can all send to, read and watch without spending Claude Code tokens; an agy delivery bridge and stream-json inbox daemon (`agy_bridge.py`); a peer and quota lister across all three harnesses (`list_peers.py`); `run_lane.sh` takes every `agy models` id with short names `agy-opus`, `agy-sonnet` and `gpt-oss`; the skill explains harness versus model and gives a routing table. Built and tested by an Antigravity session.
+
+- [`6847993`](https://github.com/ngodn/denny-skills/commit/6847993d3944a117aef01e9091f5b14dc0b5a904) Thanks [@ngodn](https://github.com/ngodn)! - `agent-comms`, `agent-lanes`, `desktop-control`: work with Orca (the agent IDE) and across the user's machines. Orca: `list_peers.py` shows each session's Orca state, `mail.py send --orca` types a mail into a peer's Orca terminal at no model cost, `run_lane.sh --orca` starts a lane as a visible Orca tab and watches it (`orca_env.py`, `orca_lane.py`), and question boxes in an Orca terminal are answered through the Orca CLI without the mouse. Other machines: new `remote.py` runs the same scripts on another machine through SSH carried by Tailscale (it dials with `tailscale nc`, so it works with userspace Tailscale beside another VPN), `mail.py send <peer>@<host>` reaches any agent there with the usual delivery flags, `list_peers.py --hosts` lists sessions on every registered machine, `remote.py lane` starts a lane there that reports back to its lead, and `remote.py run`, `push` and `pull` cover commands, screenshots and files.
+
+- [`3d7c9c4`](https://github.com/ngodn/denny-skills/commit/3d7c9c4dbf493112477e7b7f805358d20e6be51c) Thanks [@ngodn](https://github.com/ngodn)! - Add `agent-comms` (misc): how Claude sessions, Codex exec lanes and sessions, and Antigravity reach each other, with tested delivery facts (`codex queue` never reaches a running exec turn but lands on the next resume; a headless `claude -p` can relay any agent's message into a Claude session), a tab-title session watcher, `run_lane.sh` and `watch_lane.py`, one lane launcher and watcher for Claude, Codex and Antigravity with a chosen model and effort (low, medium, high), and shared-resource ownership rules. `agent-lanes` now points to it for messaging.
+
+- [`125371d`](https://github.com/ngodn/denny-skills/commit/125371dfb7ebc01918a628eba0ff1aedde2afdeb) Thanks [@ngodn](https://github.com/ngodn)! - `agent-comms`: add `scripts/autoresume.py`, a watcher outside any agent session that resumes Claude lanes cut off by a usage limit once the limit resets (`show`, `once`, `watch`, `service install|status|remove`, `selftest`), and `scripts/run_lane_unit.sh`, which runs a lane as its own systemd user unit so systemd-oomd cannot kill it together with the editor session. `run_lane.sh` now records `add-dirs.txt` in the run folder. `agent-lanes`: new section "Lanes that keep going without the lead".
+
+- [`78679cc`](https://github.com/ngodn/denny-skills/commit/78679ccde45577401791843f2d1dee55719f0122) Thanks [@ngodn](https://github.com/ngodn)! - `agent-lanes`: add "Leading for hours" (three wake sources and re-arming them, reporting on change, looking at every result before passing it on, approvals that name the invariant, lanes that end their turn when they only wait, freezing background work while the user's game runs) and the rule to queue shared tools on a lock instead of a poll. `agent-comms`: add `mailwake.sh` (wake a cleanly stopped Claude lane when mail arrives, `NOTICE` mail does not wake), `leadwatch.sh` (one event stream for the lead: unit ended, new result files, watched process, low disk, heartbeat) and `resource_lock.sh` (run a command under a named machine-wide lock so editor, cook and GPU jobs from different lanes take turns).
+
+- [`f313546`](https://github.com/ngodn/denny-skills/commit/f3135461580a40ecdeb3d79be4f3fc2522d70a10) - Add three in-progress skills for building apps well: `app-foundations` (a router plus one rules-and-checklist file per topic: offline-first, frontend, API and backend, data and storage, auth and permissions, security and row-level security, rate limiting, caching, logging and audit, availability and recovery), `offline-first-sync` (command log, transaction envelope, push/pull protocol, conflict rules, exception workbench, offline testing), and `rust-mobile-core` (sharing a Rust core with Android and iOS through UniFFI, cargo-ndk, Gradle, 16 KB page alignment).
+
+- [`3d7c9c4`](https://github.com/ngodn/denny-skills/commit/3d7c9c4dbf493112477e7b7f805358d20e6be51c) Thanks [@ngodn](https://github.com/ngodn)! - Add `desktop-control` (misc): screenshot and drive a Hyprland desktop from a shell when no computer-use tool exists. `shot.sh` finds the Wayland socket that allows capture, `pointer.py` moves the cursor through Hyprland and clicks or scrolls through a short-lived uinput mouse, and the skill covers coordinate conversion, verify-by-screenshot, and answering Claude Code question boxes in another session.
+
+- [`e6de266`](https://github.com/ngodn/denny-skills/commit/e6de2668fdef57d70b8cb630c99be9425637a736) Thanks [@ngodn](https://github.com/ngodn)! - `device42`: define what a "workload" means in the sizing rule ("one RC per 1,000 workloads") and separate it from the job count. A workload is one discovered-and-monitored machine; jobs are the RC's concurrency unit. Notes that ongoing per-device RU/Storage polling is what actually loads the RC, so size by unique machine count rather than by how many discovery jobs are scheduled.
+
+- [`43f0dd9`](https://github.com/ngodn/denny-skills/commit/43f0dd9b4c6f25ab5392b583ef5ef36f76a67f65) Thanks [@ngodn](https://github.com/ngodn)! - The installers also link every skill into `~/.gemini/config/skills` (Antigravity app and `agy` CLI) on a machine that has a `~/.gemini` folder, so all three harnesses get the same set from one run.
+
+- [`4634069`](https://github.com/ngodn/denny-skills/commit/46340695244f4037724f7e358c62899fcfc85e07) Thanks [@ngodn](https://github.com/ngodn)! - Add `office-browser` (misc): work in the user's real, signed-in Google Chrome profile through `chrome-devtools-mcp --autoConnect`, one connection and one debugging approval per job, opening tabs in the office profile with `--profile-directory`, and setup for Claude Code, Codex and Antigravity.
+
+- [`5432c26`](https://github.com/ngodn/denny-skills/commit/5432c26d328c8937a87d95d9a972b375074929ea) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to try verified game-window input and native screenshots before
+  taking desktop focus. Document process/window validation, targeted input cleanup,
+  gameplay readback, refill-cheat interference and weapon readiness checks.
+
+- [`62623d5`](https://github.com/ngodn/denny-skills/commit/62623d509699c0c0a9e2fb0455a73ed3c1954206) Thanks [@ngodn](https://github.com/ngodn)! - `ue-modding`: add `CONTACT-MEASUREMENT.md` for measuring penetration between skinned surfaces across animations and body sliders: start from a library inside test, open-shell and back-surface traps, per-region attribution with temporary caps, deterministic ties, verify every speed-up against the full evaluator, coarse grid plus bisection for contact thresholds, and render caps.
+
+- [`6a88937`](https://github.com/ngodn/denny-skills/commit/6a889378771964b3cb5c58f2378c6fa6e7652206) Thanks [@ngodn](https://github.com/ngodn)! - Revise `ue-modding` around verified game-specific toolchains. Add CUE4Parse patch
+  preservation, Blender authoring, compatible Unreal editors, target-platform
+  cooking and package readback. Replace unsupported blanket claims about missing
+  editor/source access, hot reload, hook costs, reflection calls and secondary
+  physics with scoped checks and primary-source references.
+
+- [`4b099e2`](https://github.com/ngodn/denny-skills/commit/4b099e2740757c9f6d9e498a37ca904ee4b07272) Thanks [@ngodn](https://github.com/ngodn)! - `ue-modding`: new `GAME-UI.md` for adding rows, tabs and pages to a shipped game's own menus so they read as native: verify every reflected call against the live signature, learn per-instance settings and layout from the game's own widgets, refill rows the game rewrites, layout and navigation timing, confirm handled by the page, camera states that override view targets, cost, and proving cleanup. `GAME-CONTROL.md` gains driving menus through the game's own input entry points and testing on fresh data.
+
+- [`eff008f`](https://github.com/ngodn/denny-skills/commit/eff008f2843e2c793bad8e0b5bd50cdbe1a2aac0) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to diagnose a fitted body that trembles, stretches or appears to flip a knee during
+  one gait: verify the gait, measure chain lengths, isolate the pose writer one owner at a time, check
+  Control Rig and PBIK initialisation in UE 5.6.1, and verify ornament and hit-shape contact separately.
+
+- [`9560530`](https://github.com/ngodn/denny-skills/commit/95605305199152382a330604893f5f899c2ee831) Thanks [@ngodn](https://github.com/ngodn)! - Teach `ue-modding` to trim shipped containers by import closure, move cooked assets to new paths
+  with decoded parity checks, keep materials drawing after a game patch drops shared shaders (audit
+  plus a same-permutation donor fallback), avoid the rootless Docker `/mnt` blind spot in containerised
+  cooks, and build body shape sliders from transferred artist sculpts.
+
+- [`62623d5`](https://github.com/ngodn/denny-skills/commit/62623d509699c0c0a9e2fb0455a73ed3c1954206) Thanks [@ngodn](https://github.com/ngodn)! - `ue-modding`: `ANIMATION.md` gains retargeting between rigs with different joint counts (idle joints from end-to-end chain mapping, sharing a bend along the chain with the chain end held, shoulder rhythm, wrist roll and twist bones, pose-or-mesh test), the order of work for a hand on another body (rest or grip, palm, fingers, per-point limits, deformer and clearance) and natural face curve strength. New `LIVE-TEST-WINDOWS.md` for unattended scripted game tests: offline rehearsal against the real mod code, readback after every action, preconditions so a test can fail, restore that keeps grown caches, captures that show the subject, install by hash with a rollback set. `TOOLCHAIN.md` gains finding the cook route that reproduces released bytes before adding to a shipped mesh, and bridges that drop array arguments silently.
+
+- [`cdc16e1`](https://github.com/ngodn/denny-skills/commit/cdc16e1402fe991573e755aea80fa8a62b084083) Thanks [@ngodn](https://github.com/ngodn)! - Add `video-mocap` to the `misc` bucket: monocular video to game animation, camera track and face curves on a local GPU, with the per-stage traps that cost reruns.
+
 ## 1.0.1
 
 The first release of this fork. Version numbering restarts here: it is not a
