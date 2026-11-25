@@ -1,0 +1,3 @@
+interface:
+  display_name: "Rust Mobile Core"
+  short_description: "Share a Rust core with Android and iOS via UniFFI"

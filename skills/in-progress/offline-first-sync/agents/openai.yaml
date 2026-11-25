@@ -1,0 +1,3 @@
+interface:
+  display_name: "Offline-First Sync"
+  short_description: "Offline write queues, sync protocol, conflicts"
